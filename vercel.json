@@ -1,0 +1,23 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "version": 2,
+  "buildCommand": "npm run build",
+  "outputDirectory": "dist/public",
+  "framework": null,
+  "rewrites": [
+    { "source": "/api/(.*)", "destination": "/server/index.ts" },
+    { "source": "/ws", "destination": "/server/index.ts" },
+    { "source": "/(.*)", "destination": "/client/index.html" }
+  ],
+  "functions": {
+    "server/index.ts": {
+      "memory": 512,
+      "maxDuration": 30
+    }
+  },
+  "env": {
+    "DATABASE_URL": "@database-url",
+    "OPENAI_API_KEY": "@openai-api-key",
+    "SESSION_SECRET": "@session-secret"
+  }
+}
