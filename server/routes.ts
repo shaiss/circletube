@@ -20,7 +20,6 @@ import toolRoutes from "./routes/toolRoutes";
 import labRoutes from "./routes/labRoutes";
 import healthRoutes from "./routes/healthRoutes";
 import metricsAnalysisRoutes from "./routes/metricsAnalysisRoutes";
-import openaiTestRoute from "./routes/openaiTestRoute";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   await setupAuth(app);
@@ -266,8 +265,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   // ------------------- Default Circle Routes -------------------
-  // Default circle compatibility endpoints
-  app.get('/api/default-circle', requireAuth, async (req, res) => {
+  // Default circle compatibility endpoint (canonical: /api/circles/default)
+  app.get('/api/circles/default', requireAuth, async (req, res) => {
     try {
       const defaultCircle = await storage.getDefaultCircle(req.user!.id);
       res.json(defaultCircle);
@@ -277,7 +276,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  app.get('/api/circles/default', requireAuth, async (req, res) => {
+  // Legacy alias
+  app.get('/api/default-circle', requireAuth, async (req, res) => {
     try {
       const defaultCircle = await storage.getDefaultCircle(req.user!.id);
       res.json(defaultCircle);
@@ -300,7 +300,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.use('/api/labs', labRoutes);
   app.use('/api/nft', nftRoutes);
   app.use('/api/health', healthRoutes);
-  app.use('/api', openaiTestRoute);  // Register this before metricsAnalysisRoutes
   app.use('/api', metricsAnalysisRoutes);
   
   // Register circle-related routes

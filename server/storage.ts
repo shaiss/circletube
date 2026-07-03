@@ -944,55 +944,6 @@ export class DatabaseStorage implements IStorage {
   }
   
   /**
-   * Add a collective to a circle
-   */
-  async addCollectiveToCircle(circleId: number, collectiveId: number): Promise<CircleCollective> {
-    try {
-      console.log("[Storage] Adding collective to circle:", {
-        circleId,
-        collectiveId
-      });
-      
-      const [relationship] = (await db
-        .insert(circleCollectives)
-        .values({ circleId, collectiveId })
-        .returning()) as CircleCollective[];
-      
-      console.log("[Storage] Added collective to circle");
-      return relationship;
-    } catch (error) {
-      console.error("[Storage] Error adding collective to circle:", error);
-      throw error;
-    }
-  }
-  
-  /**
-   * Remove a collective from a circle
-   */
-  async removeCollectiveFromCircle(circleId: number, collectiveId: number): Promise<void> {
-    try {
-      console.log("[Storage] Removing collective from circle:", {
-        circleId,
-        collectiveId
-      });
-      
-      await db
-        .delete(circleCollectives)
-        .where(
-          and(
-            eq(circleCollectives.circleId, circleId),
-            eq(circleCollectives.collectiveId, collectiveId)
-          )
-        );
-      
-      console.log("[Storage] Removed collective from circle");
-    } catch (error) {
-      console.error("[Storage] Error removing collective from circle:", error);
-      throw error;
-    }
-  }
-  
-  /**
    * Add a collective to a circle (alias for backward compatibility)
    */
   async addCircleCollective(circleId: number, collectiveId: number): Promise<CircleCollective> {
