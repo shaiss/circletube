@@ -1,0 +1,659 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CircleTube Test Reports</title>
+  <style>
+    :root {
+      --primary: #3498db;
+      --primary-dark: #2980b9;
+      --success: #2ecc71;
+      --warning: #f39c12;
+      --danger: #e74c3c;
+      --light: #f5f5f5;
+      --dark: #333;
+      --grey: #95a5a6;
+    }
+    
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+      line-height: 1.6;
+      color: var(--dark);
+      margin: 0;
+      padding: 0;
+      background-color: var(--light);
+    }
+    
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 2rem;
+    }
+    
+    header {
+      background-color: var(--primary);
+      color: white;
+      padding: 2rem 0;
+      margin-bottom: 2rem;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    
+    h1 {
+      font-size: 2.5rem;
+      margin: 0;
+      padding: 0 2rem;
+    }
+    
+    h2 {
+      color: var(--primary-dark);
+      border-bottom: 2px solid var(--primary);
+      padding-bottom: 0.5rem;
+      margin-top: 2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    
+    .files-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 1.5rem;
+      margin-top: 2rem;
+    }
+    
+    .file-card {
+      background: white;
+      border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+      overflow: hidden;
+    }
+    
+    .file-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 5px 15px rgba(0,0,0,0.15);
+    }
+    
+    .file-header {
+      padding: 1rem;
+      border-bottom: 1px solid #eee;
+      background-color: rgba(52, 152, 219, 0.1);
+    }
+    
+    .file-body {
+      padding: 1rem;
+    }
+    
+    .file-footer {
+      padding: 1rem;
+      border-top: 1px solid #eee;
+      text-align: right;
+    }
+    
+    .file-type {
+      display: inline-block;
+      padding: 0.25rem 0.5rem;
+      border-radius: 4px;
+      font-size: 0.8rem;
+      font-weight: bold;
+      text-transform: uppercase;
+      margin-bottom: 0.5rem;
+    }
+    
+    .file-type.html {
+      background-color: rgba(46, 204, 113, 0.2);
+      color: #27ae60;
+    }
+    
+    .file-type.json {
+      background-color: rgba(243, 156, 18, 0.2);
+      color: #d35400;
+    }
+    
+    .file-type.xml {
+      background-color: rgba(231, 76, 60, 0.2);
+      color: #c0392b;
+    }
+    
+    .file-type.folder {
+      background-color: rgba(142, 68, 173, 0.2);
+      color: #8e44ad;
+    }
+    
+    .file-name {
+      font-weight: bold;
+      font-size: 1.1rem;
+      margin: 0;
+    }
+    
+    .file-description {
+      color: var(--grey);
+      font-size: 0.9rem;
+      margin-top: 0.5rem;
+    }
+    
+    .file-date {
+      display: block;
+      font-size: 0.8rem;
+      color: var(--grey);
+      margin-top: 0.7rem;
+    }
+    
+    .btn {
+      display: inline-block;
+      padding: 0.5rem 1rem;
+      background-color: var(--primary);
+      color: white;
+      text-decoration: none;
+      border-radius: 4px;
+      font-weight: 500;
+      transition: background-color 0.2s ease;
+    }
+    
+    .btn:hover {
+      background-color: var(--primary-dark);
+    }
+    
+    .summary {
+      background-color: rgba(52, 152, 219, 0.1);
+      border-radius: 8px;
+      padding: 1.5rem;
+      margin-bottom: 2rem;
+    }
+    
+    .stats {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1rem;
+      margin-top: 1rem;
+    }
+    
+    .stat-card {
+      background: white;
+      border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+      padding: 1rem;
+      flex: 1;
+      min-width: 150px;
+      text-align: center;
+    }
+    
+    .stat-value {
+      font-size: 2rem;
+      font-weight: bold;
+      color: var(--primary);
+      margin: 0;
+    }
+    
+    .stat-label {
+      font-size: 0.9rem;
+      color: var(--grey);
+      margin: 0;
+    }
+    
+    footer {
+      text-align: center;
+      margin-top: 3rem;
+      padding: 2rem 0;
+      border-top: 1px solid #eee;
+      color: var(--grey);
+      font-size: 0.9rem;
+    }
+    
+    #refresh-stats {
+      cursor: pointer;
+      background: var(--primary);
+      color: white;
+      border: none;
+      padding: 0.5rem 1rem;
+      border-radius: 4px;
+      font-weight: 500;
+      margin-left: 1rem;
+    }
+    
+    .last-update {
+      font-size: 0.8rem;
+      color: var(--grey);
+      margin-top: 0.5rem;
+    }
+    
+    .filter-controls {
+      display: flex;
+      gap: 1rem;
+      margin: 1rem 0;
+      align-items: center;
+    }
+    
+    .filter-toggle {
+      display: flex;
+      align-items: center;
+      cursor: pointer;
+      user-select: none;
+    }
+    
+    .filter-toggle input {
+      margin-right: 0.5rem;
+    }
+    
+    .search-box {
+      flex: 1;
+      padding: 0.5rem;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-size: 0.9rem;
+    }
+    
+    .no-files {
+      grid-column: 1 / -1;
+      padding: 2rem;
+      text-align: center;
+      background: white;
+      border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    
+    .section-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    
+    .category-toggle {
+      font-size: 0.8rem;
+      padding: 0.3rem 0.6rem;
+      border-radius: 4px;
+      background-color: var(--light);
+      border: 1px solid var(--grey);
+      cursor: pointer;
+      transition: background-color 0.2s;
+    }
+    
+    .category-toggle:hover {
+      background-color: #e0e0e0;
+    }
+    
+    .hidden-section {
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>CircleTube Test Reports</h1>
+  </header>
+  
+  <div class="container">
+    <div class="summary">
+      <h2>Test Report Overview</h2>
+      <p>Access test reports and API traces generated during testing of the CircleTube platform.</p>
+      
+      <div class="filter-controls">
+        <input type="text" id="search-input" class="search-box" placeholder="Search for reports...">
+        <label class="filter-toggle">
+          <input type="checkbox" id="html-only-toggle">
+          <span>View HTML reports only</span>
+        </label>
+        <button id="refresh-stats">Refresh</button>
+      </div>
+      
+      <div class="stats">
+        <div class="stat-card">
+          <p class="stat-value" id="test-report-count">-</p>
+          <p class="stat-label">Test Reports</p>
+        </div>
+        <div class="stat-card">
+          <p class="stat-value" id="api-trace-count">-</p>
+          <p class="stat-label">API Traces</p>
+        </div>
+        <div class="stat-card">
+          <p class="stat-value" id="xml-report-count">-</p>
+          <p class="stat-label">XML Reports</p>
+        </div>
+        <div class="stat-card">
+          <p class="stat-value" id="last-run">-</p>
+          <p class="stat-label">Latest Run</p>
+        </div>
+      </div>
+      
+      <p class="last-update">Last updated: <span id="update-time"></span></p>
+    </div>
+    
+    <div id="all-reports-container">
+      <div class="section-header">
+        <h2>Test Reports</h2>
+        <button id="toggle-test-reports" class="category-toggle">Hide</button>
+      </div>
+      <div class="files-grid" id="test-reports-container">
+        <!-- Test Report Cards -->
+      </div>
+      
+      <div class="section-header">
+        <h2>API Traces</h2>
+        <button id="toggle-api-traces" class="category-toggle">Hide</button>
+      </div>
+      <div class="files-grid" id="api-traces-container">
+        <!-- API Trace Cards -->
+      </div>
+      
+      <div class="section-header">
+        <h2>CI/CD Integration</h2>
+        <button id="toggle-xml-reports" class="category-toggle">Hide</button>
+      </div>
+      <div class="files-grid" id="xml-reports-container">
+        <!-- XML Report Cards -->
+      </div>
+    </div>
+  </div>
+  
+  <footer>
+    <p>CircleTube Testing Infrastructure &copy; 2025</p>
+  </footer>
+  
+  <script>
+    // Initial file metadata - will be replaced with directory listing
+    const fileDescriptions = {
+      'validation-api-trace.html': 'Visual representation of API calls made during lab validation tests',
+      'validation-api-trace.json': 'Raw JSON data of API calls made during lab validation tests',
+      'comprehensive-api-trace.html': 'Comprehensive API trace report for all test runs',
+      'api-traces.json': 'Combined API traces from all test runs',
+      'validation-tests-report.html': 'Detailed test results for lab validation tests',
+      'comprehensive-tests-report.html': 'Full test suite results with all test cases',
+      'simple-tests-report.html': 'Basic test results for simple tests',
+      'comprehensive-tests-junit.xml': 'JUnit XML output for comprehensive tests',
+      'simple-tests-junit.xml': 'JUnit XML output for simple tests',
+      'jest-html-reporters-attach': 'Attachments and assets for HTML test reports'
+    };
+    
+    // Function to categorize files
+    function categorizeFile(filename) {
+      if (filename.endsWith('.html')) {
+        if (filename.includes('api-trace')) {
+          return 'api-traces';
+        }
+        return 'test-reports';
+      } else if (filename.endsWith('.json')) {
+        return 'api-traces';
+      } else if (filename.endsWith('.xml')) {
+        return 'xml-reports';
+      } else if (!filename.includes('.')) {
+        return 'other';
+      }
+      return 'other';
+    }
+    
+    // Function to determine file type
+    function getFileType(filename) {
+      if (filename.endsWith('.html')) {
+        return 'html';
+      } else if (filename.endsWith('.json')) {
+        return 'json';
+      } else if (filename.endsWith('.xml')) {
+        return 'xml';
+      } else if (!filename.includes('.')) {
+        return 'folder';
+      }
+      return 'other';
+    }
+    
+    // Function to get file description
+    function getFileDescription(filename) {
+      return fileDescriptions[filename] || 'Test report file';
+    }
+    
+    // Function to extract date from filename
+    function getDateFromFilename(filename) {
+      // Look for date patterns in filename like YYYY-MM-DD or timestamps
+      const dateMatch = filename.match(/(\d{4}-\d{2}-\d{2})|(\d{8})/);
+      if (dateMatch) {
+        const dateStr = dateMatch[0];
+        if (dateStr.includes('-')) {
+          return new Date(dateStr);
+        } else {
+          // Format: YYYYMMDD
+          return new Date(
+            dateStr.substring(0, 4),
+            parseInt(dateStr.substring(4, 6)) - 1,
+            dateStr.substring(6, 8)
+          );
+        }
+      }
+      
+      // If no date in filename, try to get from file stats
+      const today = new Date();
+      return today;
+    }
+    
+    // Function to create a file card
+    function createFileCard(file) {
+      const card = document.createElement('div');
+      card.className = 'file-card';
+      card.dataset.type = file.type;
+      card.dataset.category = file.category;
+      card.dataset.name = file.name.toLowerCase();
+      
+      const fileDate = getDateFromFilename(file.name);
+      const dateStr = fileDate.toLocaleDateString(undefined, { 
+        year: 'numeric', 
+        month: 'short', 
+        day: 'numeric' 
+      });
+      
+      card.innerHTML = `
+        <div class="file-header">
+          <span class="file-type ${file.type}">${file.type}</span>
+          <h3 class="file-name">${file.name}</h3>
+        </div>
+        <div class="file-body">
+          <p class="file-description">${file.description}</p>
+          <span class="file-date">Date: ${dateStr}</span>
+        </div>
+        <div class="file-footer">
+          <a href="${file.name}" class="btn" target="_blank">View</a>
+        </div>
+      `;
+      
+      return card;
+    }
+    
+    // Function to fetch directory listing and update UI
+    async function fetchDirectoryListing() {
+      try {
+        // Clear the containers
+        document.getElementById('test-reports-container').innerHTML = '';
+        document.getElementById('api-traces-container').innerHTML = '';
+        document.getElementById('xml-reports-container').innerHTML = '';
+        
+        // Get page HTML
+        const response = await fetch(window.location.href);
+        const html = await response.text();
+        
+        // Parse links using DOMParser
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(html, 'text/html');
+        const links = Array.from(doc.querySelectorAll('a'));
+        
+        // Extract filenames
+        const files = links
+          .map(link => link.getAttribute('href'))
+          .filter(href => href && !href.startsWith('?') && !href.startsWith('/') && href !== '../' && href !== 'index.html')
+          .map(filename => ({
+            name: filename,
+            type: getFileType(filename),
+            description: getFileDescription(filename),
+            category: categorizeFile(filename),
+            date: getDateFromFilename(filename)
+          }));
+          
+        // Sort files by date (newest first)
+        files.sort((a, b) => b.date - a.date);
+        
+        // Stats counters
+        let testReportCount = 0;
+        let apiTraceCount = 0;
+        let xmlReportCount = 0;
+        let latestDate = null;
+        
+        // Process each file
+        files.forEach(file => {
+          // Create card for file
+          const card = createFileCard(file);
+          
+          // Add to appropriate container
+          if (file.category === 'test-reports') {
+            document.getElementById('test-reports-container').appendChild(card);
+            testReportCount++;
+            if (!latestDate || file.date > latestDate) {
+              latestDate = file.date;
+            }
+          } else if (file.category === 'api-traces') {
+            document.getElementById('api-traces-container').appendChild(card);
+            apiTraceCount++;
+          } else if (file.category === 'xml-reports') {
+            document.getElementById('xml-reports-container').appendChild(card);
+            xmlReportCount++;
+          }
+        });
+        
+        // Check if containers are empty and add a message
+        ['test-reports-container', 'api-traces-container', 'xml-reports-container'].forEach(containerId => {
+          const container = document.getElementById(containerId);
+          if (container.children.length === 0) {
+            container.innerHTML = '<div class="no-files">No files found in this category</div>';
+          }
+        });
+        
+        // Update stats
+        document.getElementById('test-report-count').textContent = testReportCount;
+        document.getElementById('api-trace-count').textContent = apiTraceCount;
+        document.getElementById('xml-report-count').textContent = xmlReportCount;
+        
+        // Get the date of the most recent file
+        if (latestDate) {
+          document.getElementById('last-run').textContent = latestDate.toLocaleDateString();
+        } else {
+          document.getElementById('last-run').textContent = 'N/A';
+        }
+        
+        // Apply current filter if active
+        applyFilters();
+      } catch (error) {
+        console.error('Error fetching directory listing:', error);
+      }
+    }
+    
+    // Function to filter cards
+    function applyFilters() {
+      const searchTerm = document.getElementById('search-input').value.toLowerCase();
+      const htmlOnly = document.getElementById('html-only-toggle').checked;
+      
+      // Get all cards
+      const cards = document.querySelectorAll('.file-card');
+      
+      // Iterate through each card and check if it matches the filters
+      cards.forEach(card => {
+        const fileName = card.dataset.name;
+        const fileType = card.dataset.type;
+        
+        // Check if card matches search term
+        const matchesSearch = searchTerm === '' || fileName.includes(searchTerm);
+        
+        // Check if card should be shown based on HTML only filter
+        const matchesHtmlFilter = !htmlOnly || fileType === 'html';
+        
+        // Set visibility based on both filters
+        card.style.display = matchesSearch && matchesHtmlFilter ? 'block' : 'none';
+      });
+      
+      // Check if any cards are visible in each section
+      ['test-reports-container', 'api-traces-container', 'xml-reports-container'].forEach(containerId => {
+        const container = document.getElementById(containerId);
+        const hasVisibleCards = Array.from(container.querySelectorAll('.file-card')).some(card => 
+          card.style.display !== 'none');
+          
+        // If no cards are visible, show a message
+        if (!hasVisibleCards) {
+          // Remove existing no-files message
+          const existingMessage = container.querySelector('.no-files');
+          if (existingMessage) {
+            container.removeChild(existingMessage);
+          }
+          
+          // Add new message
+          const message = document.createElement('div');
+          message.className = 'no-files';
+          message.textContent = 'No matching files found in this category';
+          container.appendChild(message);
+        } else {
+          // Remove no-files message if it exists
+          const existingMessage = container.querySelector('.no-files');
+          if (existingMessage && existingMessage.textContent.includes('No matching files')) {
+            container.removeChild(existingMessage);
+          }
+        }
+      });
+    }
+    
+    // Update timestamp
+    function updateTimestamp() {
+      document.getElementById('update-time').textContent = new Date().toLocaleString();
+    }
+    
+    // Initialize the page
+    function initPage() {
+      // Set up event listeners
+      document.getElementById('refresh-stats').addEventListener('click', function() {
+        fetchDirectoryListing();
+        updateTimestamp();
+      });
+      
+      document.getElementById('search-input').addEventListener('input', applyFilters);
+      document.getElementById('html-only-toggle').addEventListener('change', applyFilters);
+      
+      // Set up section toggle buttons
+      document.getElementById('toggle-test-reports').addEventListener('click', function() {
+        const container = document.getElementById('test-reports-container');
+        const button = document.getElementById('toggle-test-reports');
+        if (container.style.display === 'none') {
+          container.style.display = 'grid';
+          button.textContent = 'Hide';
+        } else {
+          container.style.display = 'none';
+          button.textContent = 'Show';
+        }
+      });
+      
+      document.getElementById('toggle-api-traces').addEventListener('click', function() {
+        const container = document.getElementById('api-traces-container');
+        const button = document.getElementById('toggle-api-traces');
+        if (container.style.display === 'none') {
+          container.style.display = 'grid';
+          button.textContent = 'Hide';
+        } else {
+          container.style.display = 'none';
+          button.textContent = 'Show';
+        }
+      });
+      
+      document.getElementById('toggle-xml-reports').addEventListener('click', function() {
+        const container = document.getElementById('xml-reports-container');
+        const button = document.getElementById('toggle-xml-reports');
+        if (container.style.display === 'none') {
+          container.style.display = 'grid';
+          button.textContent = 'Hide';
+        } else {
+          container.style.display = 'none';
+          button.textContent = 'Show';
+        }
+      });
+      
+      // Load initial data
+      fetchDirectoryListing();
+      updateTimestamp();
+    }
+    
+    // When the page is loaded, initialize everything
+    window.addEventListener('DOMContentLoaded', initPage);
+  </script>
+</body>
+</html>

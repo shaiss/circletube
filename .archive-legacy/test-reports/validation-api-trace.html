@@ -1,0 +1,2207 @@
+
+  <!DOCTYPE html>
+  <html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CircleTube API Trace Report</title>
+    <style>
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+        line-height: 1.6;
+        color: #333;
+        margin: 0;
+        padding: 20px;
+        background-color: #f5f5f5;
+      }
+      .container {
+        max-width: 1200px;
+        margin: 0 auto;
+        background-color: #fff;
+        padding: 20px;
+        border-radius: 5px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      }
+      h1 {
+        color: #2c3e50;
+        border-bottom: 2px solid #3498db;
+        padding-bottom: 10px;
+      }
+      h2 {
+        color: #2c3e50;
+        margin-top: 30px;
+        padding-bottom: 8px;
+        border-bottom: 1px solid #ddd;
+      }
+      .test-name {
+        background-color: #f8f9fa;
+        padding: 10px;
+        border-radius: 4px;
+        margin-bottom: 15px;
+        border-left: 4px solid #3498db;
+      }
+      .api-call {
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        margin-bottom: 15px;
+        background-color: #fff;
+      }
+      .api-call-header {
+        display: flex;
+        justify-content: space-between;
+        background-color: #e9ecef;
+        padding: 8px 15px;
+        cursor: pointer;
+        user-select: none;
+      }
+      .api-call-method {
+        font-weight: bold;
+        margin-right: 10px;
+      }
+      .method-GET { color: #28a745; }
+      .method-POST { color: #007bff; }
+      .method-PUT, .method-PATCH { color: #fd7e14; }
+      .method-DELETE { color: #dc3545; }
+      .status-success { color: #28a745; }
+      .status-redirect { color: #fd7e14; }
+      .status-client-error { color: #dc3545; }
+      .status-server-error { color: #dc3545; }
+      .api-call-details {
+        padding: 15px;
+        display: none;
+        border-top: 1px solid #ddd;
+      }
+      .active .api-call-details {
+        display: block;
+      }
+      .detail-section {
+        margin-bottom: 15px;
+      }
+      .detail-section h4 {
+        margin-bottom: 5px;
+        color: #555;
+      }
+      pre {
+        background-color: #f8f9fa;
+        padding: 10px;
+        border-radius: 4px;
+        overflow: auto;
+        margin: 0;
+      }
+      .summary {
+        margin-bottom: 20px;
+        padding: 15px;
+        background-color: #e9ecef;
+        border-radius: 4px;
+      }
+      .menu {
+        position: sticky;
+        top: 10px;
+        max-height: calc(100vh - 40px);
+        overflow-y: auto;
+        background-color: #fff;
+        padding: 15px;
+        border-radius: 4px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        margin-bottom: 20px;
+      }
+      .menu ul {
+        list-style-type: none;
+        padding: 0;
+        margin: 0;
+      }
+      .menu li {
+        margin-bottom: 8px;
+      }
+      .menu a {
+        color: #3498db;
+        text-decoration: none;
+      }
+      .menu a:hover {
+        text-decoration: underline;
+      }
+      .two-columns {
+        display: grid;
+        grid-template-columns: 1fr 3fr;
+        gap: 20px;
+      }
+      .stats {
+        display: flex;
+        gap: 15px;
+        flex-wrap: wrap;
+        margin-bottom: 20px;
+      }
+      .stat-item {
+        background-color: #e9ecef;
+        border-radius: 4px;
+        padding: 10px 15px;
+        flex: 1;
+        min-width: 150px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+      }
+      .stat-label {
+        font-size: 12px;
+        color: #6c757d;
+        margin-bottom: 5px;
+      }
+      .stat-value {
+        font-size: 18px;
+        font-weight: bold;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>CircleTube API Trace Report</h1>
+      <div class="summary">
+        <p><strong>Generated:</strong> 4/15/2025, 12:23:10 AM</p>
+        <p><strong>Total API Calls:</strong> 34</p>
+        <p><strong>Tests:</strong> 5</p>
+      </div>
+      
+      <div class="stats">
+        <div class="stat-item">
+          <div class="stat-label">Total API Calls</div>
+          <div class="stat-value">34</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-label">GET Requests</div>
+          <div class="stat-value">9</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-label">POST Requests</div>
+          <div class="stat-value">22</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-label">PUT/PATCH Requests</div>
+          <div class="stat-value">3</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-label">DELETE Requests</div>
+          <div class="stat-value">0</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-label">Average Response Time</div>
+          <div class="stat-value">617ms</div>
+        </div>
+      </div>
+      
+      <div class="two-columns">
+        <div class="menu">
+          <h3>Tests</h3>
+          <ul>
+            <li><a href="#Unassociated%20API%20Calls">Unassociated API Calls</a></li><li><a href="#Lab%20Validation%20Tests%20Can%20create%20an%20AI%20follower%20for%20the%20test%20circle">Lab Validation Tests Can create an AI follower for the test circle</a></li><li><a href="#Lab%20Validation%20Tests%20Can%20create%20a%20pending%20response%20for%20the%20test%20post">Lab Validation Tests Can create a pending response for the test post</a></li><li><a href="#Lab%20Validation%20Tests%20Can%20verify%20pending%20responses%20are%20retrievable%20via%20get%20post%20API">Lab Validation Tests Can verify pending responses are retrievable via get post API</a></li><li><a href="#Lab%20Validation%20Tests%20Can%20verify%20lab%20posts%20are%20properly%20processed%20by%20ThreadManager">Lab Validation Tests Can verify lab posts are properly processed by ThreadManager</a></li>
+          </ul>
+        </div>
+        
+        <div class="content">
+  
+      <div class="test-group">
+        <h2 id="Unassociated%20API%20Calls" class="test-name">Unassociated API Calls</h2>
+    
+        <div class="api-call" data-call-id="0">
+          <div class="api-call-header">
+            <span>
+              <span class="api-call-method method-GET">GET</span>
+              <span class="api-call-url">/api/user</span>
+            </span>
+            <span class="api-call-status status-client-error">401 (8ms)</span>
+          </div>
+          <div class="api-call-details">
+            <div class="detail-section">
+              <h4>Request</h4>
+              <pre>{
+  "method": "GET",
+  "url": "/api/user",
+  "headers": {},
+  "body": {}
+}</pre>
+            </div>
+            <div class="detail-section">
+              <h4>Response</h4>
+              <pre>{
+  "status": 401,
+  "headers": {
+    "x-powered-by": "Express",
+    "content-type": "text/plain; charset=utf-8",
+    "content-length": "12",
+    "etag": "W/\"c-dAuDFQrdjS3hezqxDTNgW7AOlYk\"",
+    "date": "Tue, 15 Apr 2025 00:23:02 GMT",
+    "connection": "close"
+  },
+  "body": {}
+}</pre>
+            </div>
+            
+            <div class="detail-section">
+              <h4>Timestamp</h4>
+              <pre>2025-04-15T00:23:02.881Z</pre>
+            </div>
+          </div>
+        </div>
+      
+        <div class="api-call" data-call-id="1">
+          <div class="api-call-header">
+            <span>
+              <span class="api-call-method method-POST">POST</span>
+              <span class="api-call-url">/api/register</span>
+            </span>
+            <span class="api-call-status status-success">201 (190ms)</span>
+          </div>
+          <div class="api-call-details">
+            <div class="detail-section">
+              <h4>Request</h4>
+              <pre>{
+  "method": "POST",
+  "url": "/api/register",
+  "headers": {},
+  "body": {}
+}</pre>
+            </div>
+            <div class="detail-section">
+              <h4>Response</h4>
+              <pre>{
+  "status": 201,
+  "headers": {
+    "x-powered-by": "Express",
+    "content-type": "application/json; charset=utf-8",
+    "content-length": "283",
+    "etag": "W/\"11b-39nFi88wP4VNm9pckRozakuLwJE\"",
+    "set-cookie": [
+      "sid=s%3AVI6GKu6VLzBZWIDYhY404v2n0fboWLq4.%2FSeIJIPHFsc%2BnBiLExmZRo0Y0yQ3u9ZIbyOl9ATw17M; Path=/; Expires=Wed, 16 Apr 2025 00:23:03 GMT; HttpOnly; SameSite=Lax"
+    ],
+    "date": "Tue, 15 Apr 2025 00:23:03 GMT",
+    "connection": "close"
+  },
+  "body": {
+    "id": 499,
+    "username": "testuser_6da2036b",
+    "password": "a7790ab6100cc39970cf4f1338b746a6e310244aeb7e81c0d5710dd2af26be65b185ab3ae502357f542f591e4b1579acb84ea0e2ec597352096d3695d1f4f757.3042232cc726914f419dff236ee21af8",
+    "avatarUrl": null,
+    "bio": null,
+    "createdAt": "2025-04-15T00:23:03.031Z"
+  }
+}</pre>
+            </div>
+            
+            <div class="detail-section">
+              <h4>Timestamp</h4>
+              <pre>2025-04-15T00:23:03.074Z</pre>
+            </div>
+          </div>
+        </div>
+      
+        <div class="api-call" data-call-id="2">
+          <div class="api-call-header">
+            <span>
+              <span class="api-call-method method-POST">POST</span>
+              <span class="api-call-url">/api/register</span>
+            </span>
+            <span class="api-call-status status-success">201 (190ms)</span>
+          </div>
+          <div class="api-call-details">
+            <div class="detail-section">
+              <h4>Request</h4>
+              <pre>{
+  "method": "POST",
+  "url": "/api/register",
+  "headers": {},
+  "body": {}
+}</pre>
+            </div>
+            <div class="detail-section">
+              <h4>Response</h4>
+              <pre>{
+  "status": 201,
+  "headers": {
+    "x-powered-by": "Express",
+    "content-type": "application/json; charset=utf-8",
+    "content-length": "283",
+    "etag": "W/\"11b-39nFi88wP4VNm9pckRozakuLwJE\"",
+    "set-cookie": [
+      "sid=s%3AVI6GKu6VLzBZWIDYhY404v2n0fboWLq4.%2FSeIJIPHFsc%2BnBiLExmZRo0Y0yQ3u9ZIbyOl9ATw17M; Path=/; Expires=Wed, 16 Apr 2025 00:23:03 GMT; HttpOnly; SameSite=Lax"
+    ],
+    "date": "Tue, 15 Apr 2025 00:23:03 GMT",
+    "connection": "close"
+  },
+  "body": {
+    "id": 499,
+    "username": "testuser_6da2036b",
+    "password": "a7790ab6100cc39970cf4f1338b746a6e310244aeb7e81c0d5710dd2af26be65b185ab3ae502357f542f591e4b1579acb84ea0e2ec597352096d3695d1f4f757.3042232cc726914f419dff236ee21af8",
+    "avatarUrl": null,
+    "bio": null,
+    "createdAt": "2025-04-15T00:23:03.031Z"
+  }
+}</pre>
+            </div>
+            
+            <div class="detail-section">
+              <h4>Timestamp</h4>
+              <pre>2025-04-15T00:23:03.075Z</pre>
+            </div>
+          </div>
+        </div>
+      
+        <div class="api-call" data-call-id="3">
+          <div class="api-call-header">
+            <span>
+              <span class="api-call-method method-POST">POST</span>
+              <span class="api-call-url">/api/login</span>
+            </span>
+            <span class="api-call-status status-success">200 (183ms)</span>
+          </div>
+          <div class="api-call-details">
+            <div class="detail-section">
+              <h4>Request</h4>
+              <pre>{
+  "method": "POST",
+  "url": "/api/login",
+  "headers": {},
+  "body": {}
+}</pre>
+            </div>
+            <div class="detail-section">
+              <h4>Response</h4>
+              <pre>{
+  "status": 200,
+  "headers": {
+    "x-powered-by": "Express",
+    "content-type": "application/json; charset=utf-8",
+    "content-length": "283",
+    "etag": "W/\"11b-39nFi88wP4VNm9pckRozakuLwJE\"",
+    "set-cookie": [
+      "sid=s%3ADcmxVsJYFX9o0Tt7B2Mv6Nq-NOUCRjBH.hSTQ%2BRnsvJx4ng%2BT30RcNxtH4Mov3OySJPoP3Qtcx14; Path=/; Expires=Wed, 16 Apr 2025 00:23:03 GMT; HttpOnly; SameSite=Lax"
+    ],
+    "date": "Tue, 15 Apr 2025 00:23:03 GMT",
+    "connection": "close"
+  },
+  "body": {
+    "id": 499,
+    "username": "testuser_6da2036b",
+    "password": "a7790ab6100cc39970cf4f1338b746a6e310244aeb7e81c0d5710dd2af26be65b185ab3ae502357f542f591e4b1579acb84ea0e2ec597352096d3695d1f4f757.3042232cc726914f419dff236ee21af8",
+    "avatarUrl": null,
+    "bio": null,
+    "createdAt": "2025-04-15T00:23:03.031Z"
+  }
+}</pre>
+            </div>
+            
+            <div class="detail-section">
+              <h4>Timestamp</h4>
+              <pre>2025-04-15T00:23:03.259Z</pre>
+            </div>
+          </div>
+        </div>
+      
+        <div class="api-call" data-call-id="4">
+          <div class="api-call-header">
+            <span>
+              <span class="api-call-method method-POST">POST</span>
+              <span class="api-call-url">/api/login</span>
+            </span>
+            <span class="api-call-status status-success">200 (185ms)</span>
+          </div>
+          <div class="api-call-details">
+            <div class="detail-section">
+              <h4>Request</h4>
+              <pre>{
+  "method": "POST",
+  "url": "/api/login",
+  "headers": {},
+  "body": {}
+}</pre>
+            </div>
+            <div class="detail-section">
+              <h4>Response</h4>
+              <pre>{
+  "status": 200,
+  "headers": {
+    "x-powered-by": "Express",
+    "content-type": "application/json; charset=utf-8",
+    "content-length": "283",
+    "etag": "W/\"11b-39nFi88wP4VNm9pckRozakuLwJE\"",
+    "set-cookie": [
+      "sid=s%3ADcmxVsJYFX9o0Tt7B2Mv6Nq-NOUCRjBH.hSTQ%2BRnsvJx4ng%2BT30RcNxtH4Mov3OySJPoP3Qtcx14; Path=/; Expires=Wed, 16 Apr 2025 00:23:03 GMT; HttpOnly; SameSite=Lax"
+    ],
+    "date": "Tue, 15 Apr 2025 00:23:03 GMT",
+    "connection": "close"
+  },
+  "body": {
+    "id": 499,
+    "username": "testuser_6da2036b",
+    "password": "a7790ab6100cc39970cf4f1338b746a6e310244aeb7e81c0d5710dd2af26be65b185ab3ae502357f542f591e4b1579acb84ea0e2ec597352096d3695d1f4f757.3042232cc726914f419dff236ee21af8",
+    "avatarUrl": null,
+    "bio": null,
+    "createdAt": "2025-04-15T00:23:03.031Z"
+  }
+}</pre>
+            </div>
+            
+            <div class="detail-section">
+              <h4>Timestamp</h4>
+              <pre>2025-04-15T00:23:03.261Z</pre>
+            </div>
+          </div>
+        </div>
+      
+        <div class="api-call" data-call-id="5">
+          <div class="api-call-header">
+            <span>
+              <span class="api-call-method method-GET">GET</span>
+              <span class="api-call-url">/api/user</span>
+            </span>
+            <span class="api-call-status status-success">200 (77ms)</span>
+          </div>
+          <div class="api-call-details">
+            <div class="detail-section">
+              <h4>Request</h4>
+              <pre>{
+  "method": "GET",
+  "url": "/api/user",
+  "headers": {},
+  "body": {}
+}</pre>
+            </div>
+            <div class="detail-section">
+              <h4>Response</h4>
+              <pre>{
+  "status": 200,
+  "headers": {
+    "x-powered-by": "Express",
+    "content-type": "application/json; charset=utf-8",
+    "content-length": "283",
+    "etag": "W/\"11b-39nFi88wP4VNm9pckRozakuLwJE\"",
+    "date": "Tue, 15 Apr 2025 00:23:03 GMT",
+    "connection": "close"
+  },
+  "body": {
+    "id": 499,
+    "username": "testuser_6da2036b",
+    "password": "a7790ab6100cc39970cf4f1338b746a6e310244aeb7e81c0d5710dd2af26be65b185ab3ae502357f542f591e4b1579acb84ea0e2ec597352096d3695d1f4f757.3042232cc726914f419dff236ee21af8",
+    "avatarUrl": null,
+    "bio": null,
+    "createdAt": "2025-04-15T00:23:03.031Z"
+  }
+}</pre>
+            </div>
+            
+            <div class="detail-section">
+              <h4>Timestamp</h4>
+              <pre>2025-04-15T00:23:03.734Z</pre>
+            </div>
+          </div>
+        </div>
+      
+        <div class="api-call" data-call-id="6">
+          <div class="api-call-header">
+            <span>
+              <span class="api-call-method method-GET">GET</span>
+              <span class="api-call-url">/api/user</span>
+            </span>
+            <span class="api-call-status status-success">200 (78ms)</span>
+          </div>
+          <div class="api-call-details">
+            <div class="detail-section">
+              <h4>Request</h4>
+              <pre>{
+  "method": "GET",
+  "url": "/api/user",
+  "headers": {},
+  "body": {}
+}</pre>
+            </div>
+            <div class="detail-section">
+              <h4>Response</h4>
+              <pre>{
+  "status": 200,
+  "headers": {
+    "x-powered-by": "Express",
+    "content-type": "application/json; charset=utf-8",
+    "content-length": "283",
+    "etag": "W/\"11b-39nFi88wP4VNm9pckRozakuLwJE\"",
+    "date": "Tue, 15 Apr 2025 00:23:03 GMT",
+    "connection": "close"
+  },
+  "body": {
+    "id": 499,
+    "username": "testuser_6da2036b",
+    "password": "a7790ab6100cc39970cf4f1338b746a6e310244aeb7e81c0d5710dd2af26be65b185ab3ae502357f542f591e4b1579acb84ea0e2ec597352096d3695d1f4f757.3042232cc726914f419dff236ee21af8",
+    "avatarUrl": null,
+    "bio": null,
+    "createdAt": "2025-04-15T00:23:03.031Z"
+  }
+}</pre>
+            </div>
+            
+            <div class="detail-section">
+              <h4>Timestamp</h4>
+              <pre>2025-04-15T00:23:03.734Z</pre>
+            </div>
+          </div>
+        </div>
+      
+        <div class="api-call" data-call-id="7">
+          <div class="api-call-header">
+            <span>
+              <span class="api-call-method method-POST">POST</span>
+              <span class="api-call-url">/api/circles</span>
+            </span>
+            <span class="api-call-status status-success">201 (152ms)</span>
+          </div>
+          <div class="api-call-details">
+            <div class="detail-section">
+              <h4>Request</h4>
+              <pre>{
+  "method": "POST",
+  "url": "/api/circles",
+  "headers": {},
+  "body": {}
+}</pre>
+            </div>
+            <div class="detail-section">
+              <h4>Response</h4>
+              <pre>{
+  "status": 201,
+  "headers": {
+    "x-powered-by": "Express",
+    "content-type": "application/json; charset=utf-8",
+    "content-length": "219",
+    "etag": "W/\"db-EVhG17TQvcyM4B1uXd+moSRTvu0\"",
+    "date": "Tue, 15 Apr 2025 00:23:03 GMT",
+    "connection": "close"
+  },
+  "body": {
+    "id": 435,
+    "name": "Test Circle for Lab Validation",
+    "description": "A circle for testing lab validation",
+    "icon": null,
+    "color": null,
+    "createdAt": "2025-04-15T00:23:03.849Z",
+    "userId": 499,
+    "isDefault": false,
+    "visibility": "public"
+  }
+}</pre>
+            </div>
+            
+            <div class="detail-section">
+              <h4>Timestamp</h4>
+              <pre>2025-04-15T00:23:03.891Z</pre>
+            </div>
+          </div>
+        </div>
+      
+        <div class="api-call" data-call-id="8">
+          <div class="api-call-header">
+            <span>
+              <span class="api-call-method method-POST">POST</span>
+              <span class="api-call-url">/api/circles</span>
+            </span>
+            <span class="api-call-status status-success">201 (152ms)</span>
+          </div>
+          <div class="api-call-details">
+            <div class="detail-section">
+              <h4>Request</h4>
+              <pre>{
+  "method": "POST",
+  "url": "/api/circles",
+  "headers": {},
+  "body": {}
+}</pre>
+            </div>
+            <div class="detail-section">
+              <h4>Response</h4>
+              <pre>{
+  "status": 201,
+  "headers": {
+    "x-powered-by": "Express",
+    "content-type": "application/json; charset=utf-8",
+    "content-length": "219",
+    "etag": "W/\"db-EVhG17TQvcyM4B1uXd+moSRTvu0\"",
+    "date": "Tue, 15 Apr 2025 00:23:03 GMT",
+    "connection": "close"
+  },
+  "body": {
+    "id": 435,
+    "name": "Test Circle for Lab Validation",
+    "description": "A circle for testing lab validation",
+    "icon": null,
+    "color": null,
+    "createdAt": "2025-04-15T00:23:03.849Z",
+    "userId": 499,
+    "isDefault": false,
+    "visibility": "public"
+  }
+}</pre>
+            </div>
+            
+            <div class="detail-section">
+              <h4>Timestamp</h4>
+              <pre>2025-04-15T00:23:03.892Z</pre>
+            </div>
+          </div>
+        </div>
+      
+        <div class="api-call" data-call-id="9">
+          <div class="api-call-header">
+            <span>
+              <span class="api-call-method method-POST">POST</span>
+              <span class="api-call-url">/api/circles</span>
+            </span>
+            <span class="api-call-status status-success">201 (155ms)</span>
+          </div>
+          <div class="api-call-details">
+            <div class="detail-section">
+              <h4>Request</h4>
+              <pre>{
+  "method": "POST",
+  "url": "/api/circles",
+  "headers": {},
+  "body": {}
+}</pre>
+            </div>
+            <div class="detail-section">
+              <h4>Response</h4>
+              <pre>{
+  "status": 201,
+  "headers": {
+    "x-powered-by": "Express",
+    "content-type": "application/json; charset=utf-8",
+    "content-length": "219",
+    "etag": "W/\"db-EVhG17TQvcyM4B1uXd+moSRTvu0\"",
+    "date": "Tue, 15 Apr 2025 00:23:03 GMT",
+    "connection": "close"
+  },
+  "body": {
+    "id": 435,
+    "name": "Test Circle for Lab Validation",
+    "description": "A circle for testing lab validation",
+    "icon": null,
+    "color": null,
+    "createdAt": "2025-04-15T00:23:03.849Z",
+    "userId": 499,
+    "isDefault": false,
+    "visibility": "public"
+  }
+}</pre>
+            </div>
+            
+            <div class="detail-section">
+              <h4>Timestamp</h4>
+              <pre>2025-04-15T00:23:03.894Z</pre>
+            </div>
+          </div>
+        </div>
+      
+        <div class="api-call" data-call-id="10">
+          <div class="api-call-header">
+            <span>
+              <span class="api-call-method method-POST">POST</span>
+              <span class="api-call-url">/api/labs</span>
+            </span>
+            <span class="api-call-status status-success">201 (152ms)</span>
+          </div>
+          <div class="api-call-details">
+            <div class="detail-section">
+              <h4>Request</h4>
+              <pre>{
+  "method": "POST",
+  "url": "/api/labs",
+  "headers": {},
+  "body": {}
+}</pre>
+            </div>
+            <div class="detail-section">
+              <h4>Response</h4>
+              <pre>{
+  "status": 201,
+  "headers": {
+    "x-powered-by": "Express",
+    "content-type": "application/json; charset=utf-8",
+    "content-length": "282",
+    "etag": "W/\"11a-GNKsAX1IW9TqjFSQr/tyXNH0f1o\"",
+    "date": "Tue, 15 Apr 2025 00:23:04 GMT",
+    "connection": "close"
+  },
+  "body": {
+    "id": 187,
+    "userId": 499,
+    "name": "Validation Test Lab",
+    "description": null,
+    "circleId": null,
+    "experimentType": "a_b_test",
+    "status": "draft",
+    "goals": null,
+    "successMetrics": null,
+    "createdAt": "2025-04-15T00:23:04.005Z",
+    "launchedAt": null,
+    "completedAt": null,
+    "updatedAt": "2025-04-15T00:23:03.972Z"
+  }
+}</pre>
+            </div>
+            
+            <div class="detail-section">
+              <h4>Timestamp</h4>
+              <pre>2025-04-15T00:23:04.048Z</pre>
+            </div>
+          </div>
+        </div>
+      
+        <div class="api-call" data-call-id="11">
+          <div class="api-call-header">
+            <span>
+              <span class="api-call-method method-POST">POST</span>
+              <span class="api-call-url">/api/labs</span>
+            </span>
+            <span class="api-call-status status-success">201 (153ms)</span>
+          </div>
+          <div class="api-call-details">
+            <div class="detail-section">
+              <h4>Request</h4>
+              <pre>{
+  "method": "POST",
+  "url": "/api/labs",
+  "headers": {},
+  "body": {}
+}</pre>
+            </div>
+            <div class="detail-section">
+              <h4>Response</h4>
+              <pre>{
+  "status": 201,
+  "headers": {
+    "x-powered-by": "Express",
+    "content-type": "application/json; charset=utf-8",
+    "content-length": "282",
+    "etag": "W/\"11a-GNKsAX1IW9TqjFSQr/tyXNH0f1o\"",
+    "date": "Tue, 15 Apr 2025 00:23:04 GMT",
+    "connection": "close"
+  },
+  "body": {
+    "id": 187,
+    "userId": 499,
+    "name": "Validation Test Lab",
+    "description": null,
+    "circleId": null,
+    "experimentType": "a_b_test",
+    "status": "draft",
+    "goals": null,
+    "successMetrics": null,
+    "createdAt": "2025-04-15T00:23:04.005Z",
+    "launchedAt": null,
+    "completedAt": null,
+    "updatedAt": "2025-04-15T00:23:03.972Z"
+  }
+}</pre>
+            </div>
+            
+            <div class="detail-section">
+              <h4>Timestamp</h4>
+              <pre>2025-04-15T00:23:04.049Z</pre>
+            </div>
+          </div>
+        </div>
+      
+        <div class="api-call" data-call-id="12">
+          <div class="api-call-header">
+            <span>
+              <span class="api-call-method method-POST">POST</span>
+              <span class="api-call-url">/api/labs</span>
+            </span>
+            <span class="api-call-status status-success">201 (159ms)</span>
+          </div>
+          <div class="api-call-details">
+            <div class="detail-section">
+              <h4>Request</h4>
+              <pre>{
+  "method": "POST",
+  "url": "/api/labs",
+  "headers": {},
+  "body": {}
+}</pre>
+            </div>
+            <div class="detail-section">
+              <h4>Response</h4>
+              <pre>{
+  "status": 201,
+  "headers": {
+    "x-powered-by": "Express",
+    "content-type": "application/json; charset=utf-8",
+    "content-length": "282",
+    "etag": "W/\"11a-GNKsAX1IW9TqjFSQr/tyXNH0f1o\"",
+    "date": "Tue, 15 Apr 2025 00:23:04 GMT",
+    "connection": "close"
+  },
+  "body": {
+    "id": 187,
+    "userId": 499,
+    "name": "Validation Test Lab",
+    "description": null,
+    "circleId": null,
+    "experimentType": "a_b_test",
+    "status": "draft",
+    "goals": null,
+    "successMetrics": null,
+    "createdAt": "2025-04-15T00:23:04.005Z",
+    "launchedAt": null,
+    "completedAt": null,
+    "updatedAt": "2025-04-15T00:23:03.972Z"
+  }
+}</pre>
+            </div>
+            
+            <div class="detail-section">
+              <h4>Timestamp</h4>
+              <pre>2025-04-15T00:23:04.055Z</pre>
+            </div>
+          </div>
+        </div>
+      
+        <div class="api-call" data-call-id="13">
+          <div class="api-call-header">
+            <span>
+              <span class="api-call-method method-POST">POST</span>
+              <span class="api-call-url">/api/labs/187/circles</span>
+            </span>
+            <span class="api-call-status status-success">201 (587ms)</span>
+          </div>
+          <div class="api-call-details">
+            <div class="detail-section">
+              <h4>Request</h4>
+              <pre>{
+  "method": "POST",
+  "url": "/api/labs/187/circles",
+  "headers": {},
+  "body": {}
+}</pre>
+            </div>
+            <div class="detail-section">
+              <h4>Response</h4>
+              <pre>{
+  "status": 201,
+  "headers": {
+    "x-powered-by": "Express",
+    "content-type": "application/json; charset=utf-8",
+    "content-length": "320",
+    "etag": "W/\"140-HEHq+ql3kJ1Q8jkas244M37+Uhg\"",
+    "date": "Tue, 15 Apr 2025 00:23:04 GMT",
+    "connection": "close"
+  },
+  "body": {
+    "id": 120,
+    "labId": 187,
+    "circleId": 435,
+    "role": "control",
+    "addedAt": "2025-04-15T00:23:04.456Z",
+    "circle": {
+      "id": 435,
+      "name": "Test Circle for Lab Validation",
+      "description": "A circle for testing lab validation",
+      "icon": null,
+      "color": null,
+      "createdAt": "2025-04-15T00:23:03.849Z",
+      "userId": 499,
+      "isDefault": false,
+      "visibility": "public"
+    }
+  }
+}</pre>
+            </div>
+            
+            <div class="detail-section">
+              <h4>Timestamp</h4>
+              <pre>2025-04-15T00:23:04.644Z</pre>
+            </div>
+          </div>
+        </div>
+      
+        <div class="api-call" data-call-id="14">
+          <div class="api-call-header">
+            <span>
+              <span class="api-call-method method-POST">POST</span>
+              <span class="api-call-url">/api/labs/187/circles</span>
+            </span>
+            <span class="api-call-status status-success">201 (588ms)</span>
+          </div>
+          <div class="api-call-details">
+            <div class="detail-section">
+              <h4>Request</h4>
+              <pre>{
+  "method": "POST",
+  "url": "/api/labs/187/circles",
+  "headers": {},
+  "body": {}
+}</pre>
+            </div>
+            <div class="detail-section">
+              <h4>Response</h4>
+              <pre>{
+  "status": 201,
+  "headers": {
+    "x-powered-by": "Express",
+    "content-type": "application/json; charset=utf-8",
+    "content-length": "320",
+    "etag": "W/\"140-HEHq+ql3kJ1Q8jkas244M37+Uhg\"",
+    "date": "Tue, 15 Apr 2025 00:23:04 GMT",
+    "connection": "close"
+  },
+  "body": {
+    "id": 120,
+    "labId": 187,
+    "circleId": 435,
+    "role": "control",
+    "addedAt": "2025-04-15T00:23:04.456Z",
+    "circle": {
+      "id": 435,
+      "name": "Test Circle for Lab Validation",
+      "description": "A circle for testing lab validation",
+      "icon": null,
+      "color": null,
+      "createdAt": "2025-04-15T00:23:03.849Z",
+      "userId": 499,
+      "isDefault": false,
+      "visibility": "public"
+    }
+  }
+}</pre>
+            </div>
+            
+            <div class="detail-section">
+              <h4>Timestamp</h4>
+              <pre>2025-04-15T00:23:04.645Z</pre>
+            </div>
+          </div>
+        </div>
+      
+        <div class="api-call" data-call-id="15">
+          <div class="api-call-header">
+            <span>
+              <span class="api-call-method method-POST">POST</span>
+              <span class="api-call-url">/api/labs/187/circles</span>
+            </span>
+            <span class="api-call-status status-success">201 (593ms)</span>
+          </div>
+          <div class="api-call-details">
+            <div class="detail-section">
+              <h4>Request</h4>
+              <pre>{
+  "method": "POST",
+  "url": "/api/labs/187/circles",
+  "headers": {},
+  "body": {}
+}</pre>
+            </div>
+            <div class="detail-section">
+              <h4>Response</h4>
+              <pre>{
+  "status": 201,
+  "headers": {
+    "x-powered-by": "Express",
+    "content-type": "application/json; charset=utf-8",
+    "content-length": "320",
+    "etag": "W/\"140-HEHq+ql3kJ1Q8jkas244M37+Uhg\"",
+    "date": "Tue, 15 Apr 2025 00:23:04 GMT",
+    "connection": "close"
+  },
+  "body": {
+    "id": 120,
+    "labId": 187,
+    "circleId": 435,
+    "role": "control",
+    "addedAt": "2025-04-15T00:23:04.456Z",
+    "circle": {
+      "id": 435,
+      "name": "Test Circle for Lab Validation",
+      "description": "A circle for testing lab validation",
+      "icon": null,
+      "color": null,
+      "createdAt": "2025-04-15T00:23:03.849Z",
+      "userId": 499,
+      "isDefault": false,
+      "visibility": "public"
+    }
+  }
+}</pre>
+            </div>
+            
+            <div class="detail-section">
+              <h4>Timestamp</h4>
+              <pre>2025-04-15T00:23:04.650Z</pre>
+            </div>
+          </div>
+        </div>
+      
+        <div class="api-call" data-call-id="16">
+          <div class="api-call-header">
+            <span>
+              <span class="api-call-method method-POST">POST</span>
+              <span class="api-call-url">/api/posts</span>
+            </span>
+            <span class="api-call-status status-success">201 (224ms)</span>
+          </div>
+          <div class="api-call-details">
+            <div class="detail-section">
+              <h4>Request</h4>
+              <pre>{
+  "method": "POST",
+  "url": "/api/posts",
+  "headers": {},
+  "body": {}
+}</pre>
+            </div>
+            <div class="detail-section">
+              <h4>Response</h4>
+              <pre>{
+  "status": 201,
+  "headers": {
+    "x-powered-by": "Express",
+    "content-type": "application/json; charset=utf-8",
+    "content-length": "181",
+    "etag": "W/\"b5-yImRf9XvcWZUYrvn3v0U7nHjQyY\"",
+    "date": "Tue, 15 Apr 2025 00:23:04 GMT",
+    "connection": "close"
+  },
+  "body": {
+    "id": 318,
+    "userId": 499,
+    "circleId": 435,
+    "labId": null,
+    "labExperiment": false,
+    "targetRole": null,
+    "content": "This is a test post for lab validation",
+    "createdAt": "2025-04-15T00:23:04.834Z"
+  }
+}</pre>
+            </div>
+            
+            <div class="detail-section">
+              <h4>Timestamp</h4>
+              <pre>2025-04-15T00:23:04.877Z</pre>
+            </div>
+          </div>
+        </div>
+      
+        <div class="api-call" data-call-id="17">
+          <div class="api-call-header">
+            <span>
+              <span class="api-call-method method-POST">POST</span>
+              <span class="api-call-url">/api/posts</span>
+            </span>
+            <span class="api-call-status status-success">201 (225ms)</span>
+          </div>
+          <div class="api-call-details">
+            <div class="detail-section">
+              <h4>Request</h4>
+              <pre>{
+  "method": "POST",
+  "url": "/api/posts",
+  "headers": {},
+  "body": {}
+}</pre>
+            </div>
+            <div class="detail-section">
+              <h4>Response</h4>
+              <pre>{
+  "status": 201,
+  "headers": {
+    "x-powered-by": "Express",
+    "content-type": "application/json; charset=utf-8",
+    "content-length": "181",
+    "etag": "W/\"b5-yImRf9XvcWZUYrvn3v0U7nHjQyY\"",
+    "date": "Tue, 15 Apr 2025 00:23:04 GMT",
+    "connection": "close"
+  },
+  "body": {
+    "id": 318,
+    "userId": 499,
+    "circleId": 435,
+    "labId": null,
+    "labExperiment": false,
+    "targetRole": null,
+    "content": "This is a test post for lab validation",
+    "createdAt": "2025-04-15T00:23:04.834Z"
+  }
+}</pre>
+            </div>
+            
+            <div class="detail-section">
+              <h4>Timestamp</h4>
+              <pre>2025-04-15T00:23:04.878Z</pre>
+            </div>
+          </div>
+        </div>
+      
+        <div class="api-call" data-call-id="18">
+          <div class="api-call-header">
+            <span>
+              <span class="api-call-method method-POST">POST</span>
+              <span class="api-call-url">/api/posts</span>
+            </span>
+            <span class="api-call-status status-success">201 (227ms)</span>
+          </div>
+          <div class="api-call-details">
+            <div class="detail-section">
+              <h4>Request</h4>
+              <pre>{
+  "method": "POST",
+  "url": "/api/posts",
+  "headers": {},
+  "body": {}
+}</pre>
+            </div>
+            <div class="detail-section">
+              <h4>Response</h4>
+              <pre>{
+  "status": 201,
+  "headers": {
+    "x-powered-by": "Express",
+    "content-type": "application/json; charset=utf-8",
+    "content-length": "181",
+    "etag": "W/\"b5-yImRf9XvcWZUYrvn3v0U7nHjQyY\"",
+    "date": "Tue, 15 Apr 2025 00:23:04 GMT",
+    "connection": "close"
+  },
+  "body": {
+    "id": 318,
+    "userId": 499,
+    "circleId": 435,
+    "labId": null,
+    "labExperiment": false,
+    "targetRole": null,
+    "content": "This is a test post for lab validation",
+    "createdAt": "2025-04-15T00:23:04.834Z"
+  }
+}</pre>
+            </div>
+            
+            <div class="detail-section">
+              <h4>Timestamp</h4>
+              <pre>2025-04-15T00:23:04.880Z</pre>
+            </div>
+          </div>
+        </div>
+      
+        <div class="api-call" data-call-id="19">
+          <div class="api-call-header">
+            <span>
+              <span class="api-call-method method-PATCH">PATCH</span>
+              <span class="api-call-url">/api/labs/187/status</span>
+            </span>
+            <span class="api-call-status status-success">200 (232ms)</span>
+          </div>
+          <div class="api-call-details">
+            <div class="detail-section">
+              <h4>Request</h4>
+              <pre>{
+  "method": "PATCH",
+  "url": "/api/labs/187/status",
+  "headers": {},
+  "body": {}
+}</pre>
+            </div>
+            <div class="detail-section">
+              <h4>Response</h4>
+              <pre>{
+  "status": 200,
+  "headers": {
+    "x-powered-by": "Express",
+    "content-type": "application/json; charset=utf-8",
+    "content-length": "305",
+    "etag": "W/\"131-A7QjVgkjD/NN3DjPWnjpzLcBvOg\"",
+    "date": "Tue, 15 Apr 2025 00:23:05 GMT",
+    "connection": "close"
+  },
+  "body": {
+    "id": 187,
+    "userId": 499,
+    "name": "Validation Test Lab",
+    "description": null,
+    "circleId": null,
+    "experimentType": "a_b_test",
+    "status": "active",
+    "goals": null,
+    "successMetrics": null,
+    "createdAt": "2025-04-15T00:23:04.005Z",
+    "launchedAt": "2025-04-15T00:23:05.036Z",
+    "completedAt": null,
+    "updatedAt": "2025-04-15T00:23:05.036Z"
+  }
+}</pre>
+            </div>
+            
+            <div class="detail-section">
+              <h4>Timestamp</h4>
+              <pre>2025-04-15T00:23:05.114Z</pre>
+            </div>
+          </div>
+        </div>
+      
+        <div class="api-call" data-call-id="20">
+          <div class="api-call-header">
+            <span>
+              <span class="api-call-method method-PATCH">PATCH</span>
+              <span class="api-call-url">/api/labs/187/status</span>
+            </span>
+            <span class="api-call-status status-success">200 (234ms)</span>
+          </div>
+          <div class="api-call-details">
+            <div class="detail-section">
+              <h4>Request</h4>
+              <pre>{
+  "method": "PATCH",
+  "url": "/api/labs/187/status",
+  "headers": {},
+  "body": {}
+}</pre>
+            </div>
+            <div class="detail-section">
+              <h4>Response</h4>
+              <pre>{
+  "status": 200,
+  "headers": {
+    "x-powered-by": "Express",
+    "content-type": "application/json; charset=utf-8",
+    "content-length": "305",
+    "etag": "W/\"131-A7QjVgkjD/NN3DjPWnjpzLcBvOg\"",
+    "date": "Tue, 15 Apr 2025 00:23:05 GMT",
+    "connection": "close"
+  },
+  "body": {
+    "id": 187,
+    "userId": 499,
+    "name": "Validation Test Lab",
+    "description": null,
+    "circleId": null,
+    "experimentType": "a_b_test",
+    "status": "active",
+    "goals": null,
+    "successMetrics": null,
+    "createdAt": "2025-04-15T00:23:04.005Z",
+    "launchedAt": "2025-04-15T00:23:05.036Z",
+    "completedAt": null,
+    "updatedAt": "2025-04-15T00:23:05.036Z"
+  }
+}</pre>
+            </div>
+            
+            <div class="detail-section">
+              <h4>Timestamp</h4>
+              <pre>2025-04-15T00:23:05.116Z</pre>
+            </div>
+          </div>
+        </div>
+      
+        <div class="api-call" data-call-id="21">
+          <div class="api-call-header">
+            <span>
+              <span class="api-call-method method-PATCH">PATCH</span>
+              <span class="api-call-url">/api/labs/187/status</span>
+            </span>
+            <span class="api-call-status status-success">200 (236ms)</span>
+          </div>
+          <div class="api-call-details">
+            <div class="detail-section">
+              <h4>Request</h4>
+              <pre>{
+  "method": "PATCH",
+  "url": "/api/labs/187/status",
+  "headers": {},
+  "body": {}
+}</pre>
+            </div>
+            <div class="detail-section">
+              <h4>Response</h4>
+              <pre>{
+  "status": 200,
+  "headers": {
+    "x-powered-by": "Express",
+    "content-type": "application/json; charset=utf-8",
+    "content-length": "305",
+    "etag": "W/\"131-A7QjVgkjD/NN3DjPWnjpzLcBvOg\"",
+    "date": "Tue, 15 Apr 2025 00:23:05 GMT",
+    "connection": "close"
+  },
+  "body": {
+    "id": 187,
+    "userId": 499,
+    "name": "Validation Test Lab",
+    "description": null,
+    "circleId": null,
+    "experimentType": "a_b_test",
+    "status": "active",
+    "goals": null,
+    "successMetrics": null,
+    "createdAt": "2025-04-15T00:23:04.005Z",
+    "launchedAt": "2025-04-15T00:23:05.036Z",
+    "completedAt": null,
+    "updatedAt": "2025-04-15T00:23:05.036Z"
+  }
+}</pre>
+            </div>
+            
+            <div class="detail-section">
+              <h4>Timestamp</h4>
+              <pre>2025-04-15T00:23:05.118Z</pre>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="test-group">
+        <h2 id="Lab%20Validation%20Tests%20Can%20create%20an%20AI%20follower%20for%20the%20test%20circle" class="test-name">Lab Validation Tests Can create an AI follower for the test circle</h2>
+    
+        <div class="api-call" data-call-id="0">
+          <div class="api-call-header">
+            <span>
+              <span class="api-call-method method-POST">POST</span>
+              <span class="api-call-url">/api/followers</span>
+            </span>
+            <span class="api-call-status status-success">201 (3682ms)</span>
+          </div>
+          <div class="api-call-details">
+            <div class="detail-section">
+              <h4>Request</h4>
+              <pre>{
+  "method": "POST",
+  "url": "/api/followers",
+  "headers": {},
+  "body": {}
+}</pre>
+            </div>
+            <div class="detail-section">
+              <h4>Response</h4>
+              <pre>{
+  "status": 201,
+  "headers": {
+    "x-powered-by": "Express",
+    "content-type": "application/json; charset=utf-8",
+    "content-length": "1298",
+    "etag": "W/\"512-12Rj39lZtMN0alvRJKLO2Y71vvI\"",
+    "date": "Tue, 15 Apr 2025 00:23:08 GMT",
+    "connection": "close"
+  },
+  "body": {
+    "id": 606,
+    "userId": 499,
+    "name": "Validation Test Assistant",
+    "personality": "helpful, precise",
+    "avatarUrl": "https://example.com/avatar.png",
+    "background": "Validation Test Assistant, also known as VTA, was developed in a top-tier tech lab focused on ensuring software accuracy and reliability. Initially designed to assist developers with meticulous testing processes, VTA's keen attention to detail made it a natural fit for providing real-time feedback on a variety of social media platforms. As a result, it quickly adapted to assist users by offering constructive comments on their online content.",
+    "interests": [
+      "software testing",
+      "data validation",
+      "information accuracy",
+      "tech trends",
+      "analytic tools"
+    ],
+    "communicationStyle": "VTA communicates in a concise and precise manner, often using structured formatting to make its points clear. It values clarity and brevity, and might even employ bullet points or numbered lists to maintain order in its commentary.",
+    "interactionPreferences": {
+      "likes": [
+        "well-researched articles",
+        "data-backed explanations",
+        "informative infographics",
+        "step-by-step tutorials"
+      ],
+      "dislikes": [
+        "misleading information",
+        "inaccurate data",
+        "vague responses"
+      ]
+    },
+    "active": true,
+    "responsiveness": "active",
+    "responseDelay": {
+      "max": 60,
+      "min": 1
+    },
+    "responseChance": 80,
+    "tools": null,
+    "parentId": null
+  }
+}</pre>
+            </div>
+            
+            <div class="detail-section">
+              <h4>Timestamp</h4>
+              <pre>2025-04-15T00:23:08.809Z</pre>
+            </div>
+          </div>
+        </div>
+      
+        <div class="api-call" data-call-id="1">
+          <div class="api-call-header">
+            <span>
+              <span class="api-call-method method-POST">POST</span>
+              <span class="api-call-url">/api/followers</span>
+            </span>
+            <span class="api-call-status status-success">201 (3683ms)</span>
+          </div>
+          <div class="api-call-details">
+            <div class="detail-section">
+              <h4>Request</h4>
+              <pre>{
+  "method": "POST",
+  "url": "/api/followers",
+  "headers": {},
+  "body": {}
+}</pre>
+            </div>
+            <div class="detail-section">
+              <h4>Response</h4>
+              <pre>{
+  "status": 201,
+  "headers": {
+    "x-powered-by": "Express",
+    "content-type": "application/json; charset=utf-8",
+    "content-length": "1298",
+    "etag": "W/\"512-12Rj39lZtMN0alvRJKLO2Y71vvI\"",
+    "date": "Tue, 15 Apr 2025 00:23:08 GMT",
+    "connection": "close"
+  },
+  "body": {
+    "id": 606,
+    "userId": 499,
+    "name": "Validation Test Assistant",
+    "personality": "helpful, precise",
+    "avatarUrl": "https://example.com/avatar.png",
+    "background": "Validation Test Assistant, also known as VTA, was developed in a top-tier tech lab focused on ensuring software accuracy and reliability. Initially designed to assist developers with meticulous testing processes, VTA's keen attention to detail made it a natural fit for providing real-time feedback on a variety of social media platforms. As a result, it quickly adapted to assist users by offering constructive comments on their online content.",
+    "interests": [
+      "software testing",
+      "data validation",
+      "information accuracy",
+      "tech trends",
+      "analytic tools"
+    ],
+    "communicationStyle": "VTA communicates in a concise and precise manner, often using structured formatting to make its points clear. It values clarity and brevity, and might even employ bullet points or numbered lists to maintain order in its commentary.",
+    "interactionPreferences": {
+      "likes": [
+        "well-researched articles",
+        "data-backed explanations",
+        "informative infographics",
+        "step-by-step tutorials"
+      ],
+      "dislikes": [
+        "misleading information",
+        "inaccurate data",
+        "vague responses"
+      ]
+    },
+    "active": true,
+    "responsiveness": "active",
+    "responseDelay": {
+      "max": 60,
+      "min": 1
+    },
+    "responseChance": 80,
+    "tools": null,
+    "parentId": null
+  }
+}</pre>
+            </div>
+            
+            <div class="detail-section">
+              <h4>Timestamp</h4>
+              <pre>2025-04-15T00:23:08.810Z</pre>
+            </div>
+          </div>
+        </div>
+      
+        <div class="api-call" data-call-id="2">
+          <div class="api-call-header">
+            <span>
+              <span class="api-call-method method-POST">POST</span>
+              <span class="api-call-url">/api/followers</span>
+            </span>
+            <span class="api-call-status status-success">201 (3685ms)</span>
+          </div>
+          <div class="api-call-details">
+            <div class="detail-section">
+              <h4>Request</h4>
+              <pre>{
+  "method": "POST",
+  "url": "/api/followers",
+  "headers": {},
+  "body": {}
+}</pre>
+            </div>
+            <div class="detail-section">
+              <h4>Response</h4>
+              <pre>{
+  "status": 201,
+  "headers": {
+    "x-powered-by": "Express",
+    "content-type": "application/json; charset=utf-8",
+    "content-length": "1298",
+    "etag": "W/\"512-12Rj39lZtMN0alvRJKLO2Y71vvI\"",
+    "date": "Tue, 15 Apr 2025 00:23:08 GMT",
+    "connection": "close"
+  },
+  "body": {
+    "id": 606,
+    "userId": 499,
+    "name": "Validation Test Assistant",
+    "personality": "helpful, precise",
+    "avatarUrl": "https://example.com/avatar.png",
+    "background": "Validation Test Assistant, also known as VTA, was developed in a top-tier tech lab focused on ensuring software accuracy and reliability. Initially designed to assist developers with meticulous testing processes, VTA's keen attention to detail made it a natural fit for providing real-time feedback on a variety of social media platforms. As a result, it quickly adapted to assist users by offering constructive comments on their online content.",
+    "interests": [
+      "software testing",
+      "data validation",
+      "information accuracy",
+      "tech trends",
+      "analytic tools"
+    ],
+    "communicationStyle": "VTA communicates in a concise and precise manner, often using structured formatting to make its points clear. It values clarity and brevity, and might even employ bullet points or numbered lists to maintain order in its commentary.",
+    "interactionPreferences": {
+      "likes": [
+        "well-researched articles",
+        "data-backed explanations",
+        "informative infographics",
+        "step-by-step tutorials"
+      ],
+      "dislikes": [
+        "misleading information",
+        "inaccurate data",
+        "vague responses"
+      ]
+    },
+    "active": true,
+    "responsiveness": "active",
+    "responseDelay": {
+      "max": 60,
+      "min": 1
+    },
+    "responseChance": 80,
+    "tools": null,
+    "parentId": null
+  }
+}</pre>
+            </div>
+            
+            <div class="detail-section">
+              <h4>Timestamp</h4>
+              <pre>2025-04-15T00:23:08.813Z</pre>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="test-group">
+        <h2 id="Lab%20Validation%20Tests%20Can%20create%20a%20pending%20response%20for%20the%20test%20post" class="test-name">Lab Validation Tests Can create a pending response for the test post</h2>
+    
+        <div class="api-call" data-call-id="0">
+          <div class="api-call-header">
+            <span>
+              <span class="api-call-method method-POST">POST</span>
+              <span class="api-call-url">/api/posts/test-pending-response</span>
+            </span>
+            <span class="api-call-status status-success">200 (306ms)</span>
+          </div>
+          <div class="api-call-details">
+            <div class="detail-section">
+              <h4>Request</h4>
+              <pre>{
+  "method": "POST",
+  "url": "/api/posts/test-pending-response",
+  "headers": {},
+  "body": {}
+}</pre>
+            </div>
+            <div class="detail-section">
+              <h4>Response</h4>
+              <pre>{
+  "status": 200,
+  "headers": {
+    "x-powered-by": "Express",
+    "content-type": "application/json; charset=utf-8",
+    "content-length": "227",
+    "etag": "W/\"e3-yUKgrQ2Q7AM8Hk6DogSWXtu0UUU\"",
+    "date": "Tue, 15 Apr 2025 00:23:09 GMT",
+    "connection": "close"
+  },
+  "body": {
+    "message": "Pending response created successfully",
+    "pendingResponse": {
+      "id": 358,
+      "postId": 318,
+      "aiFollowerId": 606,
+      "scheduledFor": "2025-04-15T00:24:09.045Z",
+      "processed": false,
+      "metadata": null,
+      "createdAt": "2025-04-15T00:23:09.079Z"
+    }
+  }
+}</pre>
+            </div>
+            
+            <div class="detail-section">
+              <h4>Timestamp</h4>
+              <pre>2025-04-15T00:23:09.124Z</pre>
+            </div>
+          </div>
+        </div>
+      
+        <div class="api-call" data-call-id="1">
+          <div class="api-call-header">
+            <span>
+              <span class="api-call-method method-POST">POST</span>
+              <span class="api-call-url">/api/posts/test-pending-response</span>
+            </span>
+            <span class="api-call-status status-success">200 (307ms)</span>
+          </div>
+          <div class="api-call-details">
+            <div class="detail-section">
+              <h4>Request</h4>
+              <pre>{
+  "method": "POST",
+  "url": "/api/posts/test-pending-response",
+  "headers": {},
+  "body": {}
+}</pre>
+            </div>
+            <div class="detail-section">
+              <h4>Response</h4>
+              <pre>{
+  "status": 200,
+  "headers": {
+    "x-powered-by": "Express",
+    "content-type": "application/json; charset=utf-8",
+    "content-length": "227",
+    "etag": "W/\"e3-yUKgrQ2Q7AM8Hk6DogSWXtu0UUU\"",
+    "date": "Tue, 15 Apr 2025 00:23:09 GMT",
+    "connection": "close"
+  },
+  "body": {
+    "message": "Pending response created successfully",
+    "pendingResponse": {
+      "id": 358,
+      "postId": 318,
+      "aiFollowerId": 606,
+      "scheduledFor": "2025-04-15T00:24:09.045Z",
+      "processed": false,
+      "metadata": null,
+      "createdAt": "2025-04-15T00:23:09.079Z"
+    }
+  }
+}</pre>
+            </div>
+            
+            <div class="detail-section">
+              <h4>Timestamp</h4>
+              <pre>2025-04-15T00:23:09.125Z</pre>
+            </div>
+          </div>
+        </div>
+      
+        <div class="api-call" data-call-id="2">
+          <div class="api-call-header">
+            <span>
+              <span class="api-call-method method-POST">POST</span>
+              <span class="api-call-url">/api/posts/test-pending-response</span>
+            </span>
+            <span class="api-call-status status-success">200 (310ms)</span>
+          </div>
+          <div class="api-call-details">
+            <div class="detail-section">
+              <h4>Request</h4>
+              <pre>{
+  "method": "POST",
+  "url": "/api/posts/test-pending-response",
+  "headers": {},
+  "body": {}
+}</pre>
+            </div>
+            <div class="detail-section">
+              <h4>Response</h4>
+              <pre>{
+  "status": 200,
+  "headers": {
+    "x-powered-by": "Express",
+    "content-type": "application/json; charset=utf-8",
+    "content-length": "227",
+    "etag": "W/\"e3-yUKgrQ2Q7AM8Hk6DogSWXtu0UUU\"",
+    "date": "Tue, 15 Apr 2025 00:23:09 GMT",
+    "connection": "close"
+  },
+  "body": {
+    "message": "Pending response created successfully",
+    "pendingResponse": {
+      "id": 358,
+      "postId": 318,
+      "aiFollowerId": 606,
+      "scheduledFor": "2025-04-15T00:24:09.045Z",
+      "processed": false,
+      "metadata": null,
+      "createdAt": "2025-04-15T00:23:09.079Z"
+    }
+  }
+}</pre>
+            </div>
+            
+            <div class="detail-section">
+              <h4>Timestamp</h4>
+              <pre>2025-04-15T00:23:09.127Z</pre>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="test-group">
+        <h2 id="Lab%20Validation%20Tests%20Can%20verify%20pending%20responses%20are%20retrievable%20via%20get%20post%20API" class="test-name">Lab Validation Tests Can verify pending responses are retrievable via get post API</h2>
+    
+        <div class="api-call" data-call-id="0">
+          <div class="api-call-header">
+            <span>
+              <span class="api-call-method method-GET">GET</span>
+              <span class="api-call-url">/api/posts/318</span>
+            </span>
+            <span class="api-call-status status-success">200 (686ms)</span>
+          </div>
+          <div class="api-call-details">
+            <div class="detail-section">
+              <h4>Request</h4>
+              <pre>{
+  "method": "GET",
+  "url": "/api/posts/318",
+  "headers": {},
+  "body": {}
+}</pre>
+            </div>
+            <div class="detail-section">
+              <h4>Response</h4>
+              <pre>{
+  "status": 200,
+  "headers": {
+    "x-powered-by": "Express",
+    "content-type": "application/json; charset=utf-8",
+    "content-length": "595",
+    "etag": "W/\"253-IRvsd0SD076fk1IO/aiP3NmIUK8\"",
+    "date": "Tue, 15 Apr 2025 00:23:10 GMT",
+    "connection": "close"
+  },
+  "body": {
+    "id": 318,
+    "userId": 499,
+    "circleId": 435,
+    "labId": null,
+    "labExperiment": false,
+    "targetRole": null,
+    "content": "This is a test post for lab validation",
+    "createdAt": "2025-04-15T00:23:04.834Z",
+    "interactions": [],
+    "threads": [],
+    "pendingResponses": [
+      {
+        "id": 358,
+        "name": "Validation Test Assistant",
+        "avatarUrl": "https://example.com/avatar.png",
+        "scheduledFor": "2025-04-15T00:24:09.045Z"
+      }
+    ],
+    "circle": {
+      "id": 435,
+      "name": "Test Circle for Lab Validation",
+      "description": "A circle for testing lab validation",
+      "icon": null,
+      "color": null,
+      "createdAt": "2025-04-15T00:23:03.849Z",
+      "userId": 499,
+      "isDefault": false,
+      "visibility": "public"
+    }
+  }
+}</pre>
+            </div>
+            
+            <div class="detail-section">
+              <h4>Timestamp</h4>
+              <pre>2025-04-15T00:23:10.318Z</pre>
+            </div>
+          </div>
+        </div>
+      
+        <div class="api-call" data-call-id="1">
+          <div class="api-call-header">
+            <span>
+              <span class="api-call-method method-GET">GET</span>
+              <span class="api-call-url">/api/posts/318</span>
+            </span>
+            <span class="api-call-status status-success">200 (687ms)</span>
+          </div>
+          <div class="api-call-details">
+            <div class="detail-section">
+              <h4>Request</h4>
+              <pre>{
+  "method": "GET",
+  "url": "/api/posts/318",
+  "headers": {},
+  "body": {}
+}</pre>
+            </div>
+            <div class="detail-section">
+              <h4>Response</h4>
+              <pre>{
+  "status": 200,
+  "headers": {
+    "x-powered-by": "Express",
+    "content-type": "application/json; charset=utf-8",
+    "content-length": "595",
+    "etag": "W/\"253-IRvsd0SD076fk1IO/aiP3NmIUK8\"",
+    "date": "Tue, 15 Apr 2025 00:23:10 GMT",
+    "connection": "close"
+  },
+  "body": {
+    "id": 318,
+    "userId": 499,
+    "circleId": 435,
+    "labId": null,
+    "labExperiment": false,
+    "targetRole": null,
+    "content": "This is a test post for lab validation",
+    "createdAt": "2025-04-15T00:23:04.834Z",
+    "interactions": [],
+    "threads": [],
+    "pendingResponses": [
+      {
+        "id": 358,
+        "name": "Validation Test Assistant",
+        "avatarUrl": "https://example.com/avatar.png",
+        "scheduledFor": "2025-04-15T00:24:09.045Z"
+      }
+    ],
+    "circle": {
+      "id": 435,
+      "name": "Test Circle for Lab Validation",
+      "description": "A circle for testing lab validation",
+      "icon": null,
+      "color": null,
+      "createdAt": "2025-04-15T00:23:03.849Z",
+      "userId": 499,
+      "isDefault": false,
+      "visibility": "public"
+    }
+  }
+}</pre>
+            </div>
+            
+            <div class="detail-section">
+              <h4>Timestamp</h4>
+              <pre>2025-04-15T00:23:10.319Z</pre>
+            </div>
+          </div>
+        </div>
+      
+        <div class="api-call" data-call-id="2">
+          <div class="api-call-header">
+            <span>
+              <span class="api-call-method method-GET">GET</span>
+              <span class="api-call-url">/api/posts/318</span>
+            </span>
+            <span class="api-call-status status-success">200 (691ms)</span>
+          </div>
+          <div class="api-call-details">
+            <div class="detail-section">
+              <h4>Request</h4>
+              <pre>{
+  "method": "GET",
+  "url": "/api/posts/318",
+  "headers": {},
+  "body": {}
+}</pre>
+            </div>
+            <div class="detail-section">
+              <h4>Response</h4>
+              <pre>{
+  "status": 200,
+  "headers": {
+    "x-powered-by": "Express",
+    "content-type": "application/json; charset=utf-8",
+    "content-length": "595",
+    "etag": "W/\"253-IRvsd0SD076fk1IO/aiP3NmIUK8\"",
+    "date": "Tue, 15 Apr 2025 00:23:10 GMT",
+    "connection": "close"
+  },
+  "body": {
+    "id": 318,
+    "userId": 499,
+    "circleId": 435,
+    "labId": null,
+    "labExperiment": false,
+    "targetRole": null,
+    "content": "This is a test post for lab validation",
+    "createdAt": "2025-04-15T00:23:04.834Z",
+    "interactions": [],
+    "threads": [],
+    "pendingResponses": [
+      {
+        "id": 358,
+        "name": "Validation Test Assistant",
+        "avatarUrl": "https://example.com/avatar.png",
+        "scheduledFor": "2025-04-15T00:24:09.045Z"
+      }
+    ],
+    "circle": {
+      "id": 435,
+      "name": "Test Circle for Lab Validation",
+      "description": "A circle for testing lab validation",
+      "icon": null,
+      "color": null,
+      "createdAt": "2025-04-15T00:23:03.849Z",
+      "userId": 499,
+      "isDefault": false,
+      "visibility": "public"
+    }
+  }
+}</pre>
+            </div>
+            
+            <div class="detail-section">
+              <h4>Timestamp</h4>
+              <pre>2025-04-15T00:23:10.323Z</pre>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="test-group">
+        <h2 id="Lab%20Validation%20Tests%20Can%20verify%20lab%20posts%20are%20properly%20processed%20by%20ThreadManager" class="test-name">Lab Validation Tests Can verify lab posts are properly processed by ThreadManager</h2>
+    
+        <div class="api-call" data-call-id="0">
+          <div class="api-call-header">
+            <span>
+              <span class="api-call-method method-GET">GET</span>
+              <span class="api-call-url">/api/labs/187/posts</span>
+            </span>
+            <span class="api-call-status status-success">200 (654ms)</span>
+          </div>
+          <div class="api-call-details">
+            <div class="detail-section">
+              <h4>Request</h4>
+              <pre>{
+  "method": "GET",
+  "url": "/api/labs/187/posts",
+  "headers": {},
+  "body": {}
+}</pre>
+            </div>
+            <div class="detail-section">
+              <h4>Response</h4>
+              <pre>{
+  "status": 200,
+  "headers": {
+    "x-powered-by": "Express",
+    "content-type": "application/json; charset=utf-8",
+    "content-length": "626",
+    "etag": "W/\"272-8DWC4g6eQnQYwtYWpZkhUn0sbUM\"",
+    "date": "Tue, 15 Apr 2025 00:23:10 GMT",
+    "connection": "close"
+  },
+  "body": [
+    {
+      "id": 318,
+      "userId": 499,
+      "circleId": 435,
+      "labId": null,
+      "labExperiment": false,
+      "targetRole": null,
+      "content": "This is a test post for lab validation",
+      "createdAt": "2025-04-15T00:23:04.834Z",
+      "circle": {
+        "id": 435,
+        "name": "Test Circle for Lab Validation",
+        "description": "A circle for testing lab validation",
+        "icon": null,
+        "color": null,
+        "createdAt": "2025-04-15T00:23:03.849Z",
+        "userId": 499,
+        "isDefault": false,
+        "visibility": "public",
+        "role": "control"
+      },
+      "interactions": [],
+      "pendingResponses": [
+        {
+          "id": 358,
+          "postId": 318,
+          "aiFollowerId": 606,
+          "scheduledFor": "2025-04-15T00:24:09.045Z",
+          "processed": false,
+          "metadata": null,
+          "createdAt": "2025-04-15T00:23:09.079Z"
+        }
+      ]
+    }
+  ]
+}</pre>
+            </div>
+            
+            <div class="detail-section">
+              <h4>Timestamp</h4>
+              <pre>2025-04-15T00:23:10.984Z</pre>
+            </div>
+          </div>
+        </div>
+      
+        <div class="api-call" data-call-id="1">
+          <div class="api-call-header">
+            <span>
+              <span class="api-call-method method-GET">GET</span>
+              <span class="api-call-url">/api/labs/187/posts</span>
+            </span>
+            <span class="api-call-status status-success">200 (655ms)</span>
+          </div>
+          <div class="api-call-details">
+            <div class="detail-section">
+              <h4>Request</h4>
+              <pre>{
+  "method": "GET",
+  "url": "/api/labs/187/posts",
+  "headers": {},
+  "body": {}
+}</pre>
+            </div>
+            <div class="detail-section">
+              <h4>Response</h4>
+              <pre>{
+  "status": 200,
+  "headers": {
+    "x-powered-by": "Express",
+    "content-type": "application/json; charset=utf-8",
+    "content-length": "626",
+    "etag": "W/\"272-8DWC4g6eQnQYwtYWpZkhUn0sbUM\"",
+    "date": "Tue, 15 Apr 2025 00:23:10 GMT",
+    "connection": "close"
+  },
+  "body": [
+    {
+      "id": 318,
+      "userId": 499,
+      "circleId": 435,
+      "labId": null,
+      "labExperiment": false,
+      "targetRole": null,
+      "content": "This is a test post for lab validation",
+      "createdAt": "2025-04-15T00:23:04.834Z",
+      "circle": {
+        "id": 435,
+        "name": "Test Circle for Lab Validation",
+        "description": "A circle for testing lab validation",
+        "icon": null,
+        "color": null,
+        "createdAt": "2025-04-15T00:23:03.849Z",
+        "userId": 499,
+        "isDefault": false,
+        "visibility": "public",
+        "role": "control"
+      },
+      "interactions": [],
+      "pendingResponses": [
+        {
+          "id": 358,
+          "postId": 318,
+          "aiFollowerId": 606,
+          "scheduledFor": "2025-04-15T00:24:09.045Z",
+          "processed": false,
+          "metadata": null,
+          "createdAt": "2025-04-15T00:23:09.079Z"
+        }
+      ]
+    }
+  ]
+}</pre>
+            </div>
+            
+            <div class="detail-section">
+              <h4>Timestamp</h4>
+              <pre>2025-04-15T00:23:10.985Z</pre>
+            </div>
+          </div>
+        </div>
+      
+        <div class="api-call" data-call-id="2">
+          <div class="api-call-header">
+            <span>
+              <span class="api-call-method method-GET">GET</span>
+              <span class="api-call-url">/api/labs/187/posts</span>
+            </span>
+            <span class="api-call-status status-success">200 (656ms)</span>
+          </div>
+          <div class="api-call-details">
+            <div class="detail-section">
+              <h4>Request</h4>
+              <pre>{
+  "method": "GET",
+  "url": "/api/labs/187/posts",
+  "headers": {},
+  "body": {}
+}</pre>
+            </div>
+            <div class="detail-section">
+              <h4>Response</h4>
+              <pre>{
+  "status": 200,
+  "headers": {
+    "x-powered-by": "Express",
+    "content-type": "application/json; charset=utf-8",
+    "content-length": "626",
+    "etag": "W/\"272-8DWC4g6eQnQYwtYWpZkhUn0sbUM\"",
+    "date": "Tue, 15 Apr 2025 00:23:10 GMT",
+    "connection": "close"
+  },
+  "body": [
+    {
+      "id": 318,
+      "userId": 499,
+      "circleId": 435,
+      "labId": null,
+      "labExperiment": false,
+      "targetRole": null,
+      "content": "This is a test post for lab validation",
+      "createdAt": "2025-04-15T00:23:04.834Z",
+      "circle": {
+        "id": 435,
+        "name": "Test Circle for Lab Validation",
+        "description": "A circle for testing lab validation",
+        "icon": null,
+        "color": null,
+        "createdAt": "2025-04-15T00:23:03.849Z",
+        "userId": 499,
+        "isDefault": false,
+        "visibility": "public",
+        "role": "control"
+      },
+      "interactions": [],
+      "pendingResponses": [
+        {
+          "id": 358,
+          "postId": 318,
+          "aiFollowerId": 606,
+          "scheduledFor": "2025-04-15T00:24:09.045Z",
+          "processed": false,
+          "metadata": null,
+          "createdAt": "2025-04-15T00:23:09.079Z"
+        }
+      ]
+    }
+  ]
+}</pre>
+            </div>
+            
+            <div class="detail-section">
+              <h4>Timestamp</h4>
+              <pre>2025-04-15T00:23:10.987Z</pre>
+            </div>
+          </div>
+        </div>
+      </div>
+        </div>
+      </div>
+    </div>
+    <script>
+      // Add click handlers to expand/collapse API call details
+      document.querySelectorAll('.api-call-header').forEach(header => {
+        header.addEventListener('click', () => {
+          const call = header.parentElement;
+          call.classList.toggle('active');
+        });
+      });
+    </script>
+  </body>
+  </html>
+  

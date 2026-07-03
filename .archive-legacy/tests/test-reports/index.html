@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CircleTube API Test Reports</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+      line-height: 1.6;
+      color: #333;
+      margin: 0;
+      padding: 20px;
+      background-color: #f5f5f5;
+    }
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      background-color: #fff;
+      padding: 20px;
+      border-radius: 5px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    h1 {
+      color: #2c3e50;
+      border-bottom: 2px solid #3498db;
+      padding-bottom: 10px;
+    }
+    h2 {
+      color: #2c3e50;
+      margin-top: 30px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid #ddd;
+    }
+    .filters {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+    }
+    .filter-btn {
+      background-color: #f8f9fa;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      padding: 8px 15px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .filter-btn:hover {
+      background-color: #e9ecef;
+    }
+    .filter-btn.active {
+      background-color: #3498db;
+      color: white;
+      border-color: #3498db;
+    }
+    .search-box {
+      padding: 8px 15px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      width: 100%;
+      max-width: 300px;
+      margin-bottom: 15px;
+    }
+    .report-list {
+      list-style-type: none;
+      padding: 0;
+    }
+    .report-item {
+      border-bottom: 1px solid #eee;
+      padding: 10px 15px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .report-item:hover {
+      background-color: #f8f9fa;
+    }
+    .report-link {
+      color: #3498db;
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .report-link:hover {
+      text-decoration: underline;
+    }
+    .report-type {
+      font-size: 14px;
+      border-radius: 4px;
+      padding: 2px 8px;
+      margin-left: 10px;
+    }
+    .type-json {
+      background-color: #ffe0b2;
+      color: #e65100;
+    }
+    .type-html {
+      background-color: #c8e6c9;
+      color: #2e7d32;
+    }
+    .timestamp {
+      color: #6c757d;
+      font-size: 14px;
+    }
+    .no-reports {
+      padding: 20px;
+      text-align: center;
+      color: #6c757d;
+      background-color: #f8f9fa;
+      border-radius: 4px;
+    }
+    .refresh-btn {
+      background-color: #3498db;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      padding: 8px 15px;
+      cursor: pointer;
+      margin-bottom: 15px;
+    }
+    .refresh-btn:hover {
+      background-color: #2980b9;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>CircleTube API Test Reports</h1>
+    
+    <button id="refresh-btn" class="refresh-btn">Refresh List</button>
+    
+    <input type="text" id="search-box" class="search-box" placeholder="Search reports...">
+    
+    <div class="filters">
+      <button class="filter-btn active" data-filter="all">All</button>
+      <button class="filter-btn" data-filter="json">JSON</button>
+      <button class="filter-btn" data-filter="html">HTML</button>
+      <button class="filter-btn" data-filter="simple">Simple Tests</button>
+      <button class="filter-btn" data-filter="comprehensive">Comprehensive Tests</button>
+    </div>
+    
+    <div id="report-container">
+      <p class="no-reports">Loading reports...</p>
+    </div>
+  </div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', fetchReportList);
+    document.getElementById('refresh-btn').addEventListener('click', fetchReportList);
+    document.getElementById('search-box').addEventListener('input', filterReports);
+
+    // Add event listeners to filter buttons
+    document.querySelectorAll('.filter-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        // Remove active class from all buttons
+        document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+        // Add active class to clicked button
+        e.target.classList.add('active');
+        filterReports();
+      });
+    });
+
+    // Current file list (will be populated by the fetchReportList function)
+    let fileList = [];
+
+    async function fetchReportList() {
+      try {
+        const reportContainer = document.getElementById('report-container');
+        reportContainer.innerHTML = '<p class="no-reports">Loading reports...</p>';
+        
+        // In a local environment, we need to scan the directory
+        // This is simulating a directory scan by scanning the current location for files
+        const files = await listDirectoryFiles();
+        fileList = files;
+        
+        renderReportList(files);
+      } catch (error) {
+        console.error('Error fetching reports:', error);
+        document.getElementById('report-container').innerHTML = 
+          `<p class="no-reports">Error loading reports: ${error.message}</p>`;
+      }
+    }
+
+    async function listDirectoryFiles() {
+      // Simplified directory scan
+      // Fetches the current directory (self) and parses for links
+      // For real applications, we'd have a server endpoint returning this data
+      const response = await fetch('.');
+      const html = await response.text();
+      
+      // Use a regex to extract file links and timestamps
+      // This is very specific to the format of the directory listing page
+      const regex = /<td><a href="([^"]+)">[^<]+<\/a><\/td><td[^>]*>([^<]+)<\/td>/g;
+      
+      const files = [];
+      let match;
+      while ((match = regex.exec(html)) !== null) {
+        const fileName = match[1];
+        const timestamp = match[2];
+        
+        // Skip directories and non-report files
+        if (fileName.endsWith('/') || !isReportFile(fileName)) {
+          continue;
+        }
+        
+        // Add each file with metadata
+        files.push({
+          name: fileName,
+          path: fileName,
+          type: getFileType(fileName),
+          category: getReportCategory(fileName),
+          timestamp: timestamp
+        });
+      }
+      
+      return files;
+    }
+
+    function isReportFile(fileName) {
+      return fileName.endsWith('.html') || fileName.endsWith('.json');
+    }
+
+    function getFileType(fileName) {
+      if (fileName.endsWith('.html')) return 'html';
+      if (fileName.endsWith('.json')) return 'json';
+      return 'other';
+    }
+
+    function getReportCategory(fileName) {
+      if (fileName.includes('simple')) return 'simple';
+      if (fileName.includes('comprehensive')) return 'comprehensive';
+      return 'other';
+    }
+
+    function renderReportList(files) {
+      const reportContainer = document.getElementById('report-container');
+      
+      if (files.length === 0) {
+        reportContainer.innerHTML = '<p class="no-reports">No reports found</p>';
+        return;
+      }
+      
+      // Sort files by timestamp, newest first
+      files.sort((a, b) => {
+        return new Date(b.timestamp) - new Date(a.timestamp);
+      });
+      
+      const reportList = document.createElement('ul');
+      reportList.className = 'report-list';
+      
+      files.forEach(file => {
+        const listItem = document.createElement('li');
+        listItem.className = 'report-item';
+        listItem.dataset.type = file.type;
+        listItem.dataset.category = file.category;
+        
+        const reportLink = document.createElement('a');
+        reportLink.href = file.path;
+        reportLink.className = 'report-link';
+        reportLink.target = '_blank';
+        reportLink.textContent = file.name;
+        
+        const reportType = document.createElement('span');
+        reportType.className = `report-type type-${file.type}`;
+        reportType.textContent = file.type.toUpperCase();
+        reportLink.appendChild(reportType);
+        
+        const timestamp = document.createElement('span');
+        timestamp.className = 'timestamp';
+        timestamp.textContent = file.timestamp;
+        
+        listItem.appendChild(reportLink);
+        listItem.appendChild(timestamp);
+        reportList.appendChild(listItem);
+      });
+      
+      reportContainer.innerHTML = '';
+      reportContainer.appendChild(reportList);
+    }
+
+    function filterReports() {
+      const searchText = document.getElementById('search-box').value.toLowerCase();
+      const activeFilter = document.querySelector('.filter-btn.active').dataset.filter;
+      
+      const filteredFiles = fileList.filter(file => {
+        const matchesSearch = file.name.toLowerCase().includes(searchText);
+        
+        let matchesFilter = true;
+        if (activeFilter === 'json') matchesFilter = file.type === 'json';
+        else if (activeFilter === 'html') matchesFilter = file.type === 'html';
+        else if (activeFilter === 'simple') matchesFilter = file.category === 'simple';
+        else if (activeFilter === 'comprehensive') matchesFilter = file.category === 'comprehensive';
+        
+        return matchesSearch && matchesFilter;
+      });
+      
+      renderReportList(filteredFiles);
+    }
+  </script>
+</body>
+</html>
