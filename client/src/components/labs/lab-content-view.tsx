@@ -88,9 +88,9 @@ export function LabContentView({ labId }: LabContentViewProps) {
     error: postsError,
     refetch: refetchPosts
   } = useQuery<(Post & { interactions: any[], pendingResponses: any[], circle: {id: number, name: string, role: string} | null })[]>({
-    queryKey: [`/api/labs/${labId}/posts`, activeRole],
+    queryKey: [`/api/labs/${labId}/posts`],
     queryFn: async () => {
-      const res = await fetch(`/api/labs/${labId}/posts${activeRole !== "all" ? `?role=${activeRole}` : ""}`);
+      const res = await fetch(`/api/labs/${labId}/posts`);
       if (!res.ok) {
         throw new Error("Failed to fetch lab posts");
       }
