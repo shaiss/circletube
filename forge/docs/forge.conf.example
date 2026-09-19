@@ -1,0 +1,8 @@
+# forge.conf — project-side lineage (lives OUTSIDE forge/ in the project repo)
+forger:        https://github.com/shaiss/forger
+embed-branch:  embed/public-safe-package
+embed-prefix:  forge/
+embedded-sha:  <subtree squash SHA>
+embedded-date: YYYY-MM-DD
+# tuned:
+# backflow:
