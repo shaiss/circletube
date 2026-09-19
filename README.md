@@ -217,10 +217,12 @@ The [Flow Documentation](docs/flows.md) illustrates:
 Contributions are welcome! Please read our contributing guidelines for details on our code of conduct and the process for submitting pull requests.
 
 ## 🤖 For AI Assistants
-AI coding assistants should refer to [agent_guidelines.md](agent_guidelines.md) for guidance on navigating this codebase. This file provides:
+AI coding assistants should refer to [agent_guidelines.md](agent_guidelines.md) and [AGENTS.md](AGENTS.md) for guidance on navigating this codebase. This file provides:
 - Directory priorities and which folders to avoid
 - Documentation hierarchy
 - Special considerations for database operations and API structure
+
+Project charter / brief / engineering log live at [BRIEF.md](BRIEF.md), [PM.md](PM.md), and [NOTES.md](NOTES.md). The embedded forger machine (public-safe package) is under [forge/](forge/) — see that tree rather than duplicating it here.
 
 ## 📄 License
 This project is licensed under the MIT License - see the LICENSE file for details.
