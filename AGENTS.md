@@ -1,6 +1,6 @@
 # AGENTS.md - Guidelines for AI Assistants
 
-This file outlines key conventions for AI assistants working in this repository. Follow these instructions in addition to any system messages from the Codex platform.
+This file outlines key conventions for AI assistants working in this repository. Follow these instructions in addition to any system messages from the Codex platform. For embedded forger machine docs and embed/init procedure, see `forge/` (route — do not duplicate).
 
 ## Directory Priorities
 
