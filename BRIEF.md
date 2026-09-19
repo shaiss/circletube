@@ -1,14 +1,14 @@
-# Circletube (Agapi) — app brief
+# Circletube — app brief
 
 ## What it is
 
-Circletube (product surface also known as Agapi) is an AI-powered social
-platform: operators run categorized circles where human posts meet
-AI-generated followers that respond in context on a live timeline. The
-**first user** is the internal Circletube / Agapi operator (charter:
-Circe in `PM.md`) who needs AI followers to react to posts on a real
-timeline with WebSocket delivery and scheduled responses — not a static
-mock feed.
+Circletube is an AI-powered social platform: the solo operator runs
+categorized circles where human posts meet AI-generated followers that
+respond in context on a live timeline. The **first user** is admiral
+(solo operator / human lead) who needs AI followers to react to posts on
+a real timeline with WebSocket delivery and scheduled responses — not a
+static mock feed. Circe is the PM agent who owns the charter (`PM.md`),
+not the first user.
 
 ## Requirements
 
@@ -45,7 +45,7 @@ mock feed.
 
 ## Assumptions & defaults
 
-- Single internal operator for now (Circe / Circletube–Agapi internal); public multi-tenant auth is out of charter until declared.
+- Solo operator is admiral (human lead); public multi-tenant auth is out of charter until declared.
 - `npm run check` (`tsc`) is the only package script gate today.
 - Server Jest suite lives under `.archive-server-tests/` (and a residual `server/test/` tree) — **archived / not the running gate**.
 - No CI workflows, gate runners, skills automation, autonomy routines, or `forger-init` added at embed (F4).

@@ -1,12 +1,12 @@
-# Circletube (Agapi) — product charter
+# Circletube — product charter
 
 ## The product, in one paragraph
 
-Circletube (Agapi) is an agentic social app: circles of posts where AI
-followers engage in realtime. It must do one thing well — keep a live,
-context-aware follower response loop running for the operator's circles.
-**Customer:** Circe — Circletube / Agapi internal operator (single-operator
-default).
+Circletube is an agentic social app: circles of posts where AI followers
+engage in realtime. It must do one thing well — keep a live, context-aware
+follower response loop running for the operator's circles.
+**Customer:** admiral — solo operator / human lead (single-operator default).
+Circe is the PM agent who owns this charter, not the human customer.
 
 ## Non-negotiables
 
@@ -16,6 +16,8 @@ default).
 | N2 | Agent conventions stay in `docs/agent_rules/`; do not duplicate into forge | `AGENTS.md`; embed route-don't-duplicate | Those docs move or split | Review |
 | N3 | No CI / gate runners / forger-init at embed (F4) | forge package; Cipher RE-CLEAR embed | A real session is blocked without machinery | Review |
 | N4 | Database changes go through Drizzle only | `docs/agent_rules/database.md` | ORM replaced | Review |
+| N5 | Admiral owns every merge; agents never merge | Circe product review on embed | A human lead explicitly delegates merge authority | Review (no CI gate yet) |
+| N6 | Public product name is Circletube; Agapi is internal-only and must not leak as a public brand | Circe product review on embed | Public naming is deliberately changed | Review |
 
 ## Out of scope
 
@@ -29,7 +31,7 @@ default).
 
 ## v1 — definition of done
 
-- [ ] Operator can run circles with AI follower replies on a Railway (or equivalent) deploy with working `/ws`
+- [ ] Admiral can run circles with AI follower replies on a Railway (or equivalent) deploy with working `/ws`
 - [ ] Brief, charter, and NOTES stay accurate for a cold session
 - [ ] Honest gate baseline documented until a real gate is earned
 
@@ -45,6 +47,7 @@ default).
 
 | Question | Blocking? | Assumption if unanswered |
 |---|---|---|
+| Product bet still open: restart / park / write charter cadence / leftover AI-follower-likes PRD — growth stays quiet until set | Yes (blocks product) | No growth work until the bet is set |
 | Canonical long-lived host URL / service | Soft-blocks prod claims | Local `npm run dev` for development |
 | When to un-archive server tests into a gate | No | Keep `check: tsc` only |
 
@@ -53,4 +56,4 @@ default).
 | Date | Decision | Reason |
 |---|---|---|
 | 2026-09-19 | Embed Cipher RE-CLEARED `embed/public-safe-package` @ `d9379e1006795681f357884c7d6f3773be5da4d4` under `forge/` | Public-safe package only; F4 no CI |
-| 2026-09-19 | Charter customer named Circe (internal operator) | Single-operator default for project #1 |
+| 2026-09-19 | Charter customer is admiral (solo operator / human lead); Circe owns the charter as PM agent, not as customer | Corrects the embed-init log that named Circe as the customer |
