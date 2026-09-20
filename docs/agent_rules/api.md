@@ -1,7 +1,7 @@
-# Agapi API Documentation
+# Circletube API Documentation
 
 ## Overview
-This document provides detailed information about the Agapi API endpoints. The API allows you to interact with users, circles, posts, and AI followers within the Agapi platform.
+This document provides detailed information about the Circletube API endpoints. The API allows you to interact with users, circles, posts, and AI followers within the Circletube platform.
 
 ## Base URL
 All API endpoints are prefixed with `/api`

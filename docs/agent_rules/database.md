@@ -1,7 +1,7 @@
-# Agapi Database Documentation
+# Circletube Database Documentation
 
 ## Overview
-Agapi uses PostgreSQL as its primary database, managed through Drizzle ORM. This document outlines the database schema, relationships, and data models.
+Circletube uses PostgreSQL as its primary database, managed through Drizzle ORM. This document outlines the database schema, relationships, and data models.
 
 ## Entity Relationship Diagram (ERD)
 

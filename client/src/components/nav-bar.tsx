@@ -113,12 +113,12 @@ export function NavBar() {
             <div className="relative h-8 w-8 overflow-hidden rounded-md">
               <img 
                 src="/circle-logo.svg" 
-                alt="Agapi Logo" 
+                alt="Circletube Logo" 
                 className="h-full w-full object-cover"
               />
             </div>
             <span className="hidden font-semibold text-lg md:inline-block">
-              Agapi
+              Circletube
             </span>
           </Button>
         </div>

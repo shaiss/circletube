@@ -1,6 +1,6 @@
-## Agapi App Bug Log
+## Circletube App Bug Log
 
-This document is intended to track and describe bugs encountered in the Agapi application, specifically on the `feature-lab-reporting` branch. Please provide detailed steps to reproduce, observed behavior, and any other relevant notes for each issue.
+This document is intended to track and describe bugs encountered in the Circletube application, specifically on the `feature-lab-reporting` branch. Please provide detailed steps to reproduce, observed behavior, and any other relevant notes for each issue.
 
 ---
 

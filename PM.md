@@ -17,7 +17,7 @@ Circe is the PM agent who owns this charter, not the human customer.
 | N3 | No CI / gate runners / forger-init at embed (F4) | forge package; Cipher RE-CLEAR embed | A real session is blocked without machinery | Review |
 | N4 | Database changes go through Drizzle only | `docs/agent_rules/database.md` | ORM replaced | Review |
 | N5 | Admiral owns every merge; agents never merge | Circe product review on embed | A human lead explicitly delegates merge authority | Review (no CI gate yet) |
-| N6 | Public product name is Circletube; Agapi is internal-only and must not leak as a public brand | Circe product review on embed | Public naming is deliberately changed | Review |
+| N6 | Circletube is the sole public product name; Agapi is retired / do not use | Admiral ask, 2026-09-20 | A different public product name is deliberately adopted | Review |
 
 ## Out of scope
 
@@ -57,3 +57,4 @@ Circe is the PM agent who owns this charter, not the human customer.
 |---|---|---|
 | 2026-09-19 | Embed Cipher RE-CLEARED `embed/public-safe-package` @ `d9379e1006795681f357884c7d6f3773be5da4d4` under `forge/` | Public-safe package only; F4 no CI |
 | 2026-09-19 | Charter customer is admiral (solo operator / human lead); Circe owns the charter as PM agent, not as customer | Corrects the embed-init log that named Circe as the customer |
+| 2026-09-20 | Circletube is the sole public product name; Agapi is retired / do not use. Scrubbed remaining product-name mentions in UI, live docs, README, the forge brief template, and the NFT fallback host | Admiral ask |
