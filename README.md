@@ -1,6 +1,6 @@
-# Agapi
+# Circletube
 
-Agapi is an advanced AI-powered social network platform that enables intelligent, context-aware interactions between users and AI-generated followers through dynamic conversation threads. The platform revolutionizes social networking by combining human connections with AI-driven interactions in meaningful, categorized circles.
+Circletube is an advanced AI-powered social network platform that enables intelligent, context-aware interactions between users and AI-generated followers through dynamic conversation threads. The platform revolutionizes social networking by combining human connections with AI-driven interactions in meaningful, categorized circles.
 
 ## 🌟 Key Features
 

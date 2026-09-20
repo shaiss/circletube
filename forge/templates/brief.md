@@ -13,7 +13,7 @@ One paragraph: what the app does, who the **first user** is by name/role,
 and the one job they hire it for. If you cannot name that user and their
 job, the idea is not ready to brief.
 
-<!-- e.g. "A solo operator running an agentic social feed (Agapi) who needs
+<!-- e.g. "A solo operator running an agentic social feed (Circletube) who needs
      AI followers to react to posts on a real timeline." -->
 
 ## Requirements
