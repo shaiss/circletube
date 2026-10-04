@@ -1,0 +1,12 @@
+# Circletube — long-lived Node process (WebSocket `/ws` + ResponseScheduler).
+# Railway's default builder is Railpack (Nixpacks is legacy). No Dockerfile.
+# Create the Railway project/service in the dashboard; this file only pins build/start.
+
+[build]
+builder = "RAILPACK"
+buildCommand = "npm run build"
+
+[deploy]
+startCommand = "npm start"
+healthcheckPath = "/api/health"
+restartPolicyType = "ON_FAILURE"

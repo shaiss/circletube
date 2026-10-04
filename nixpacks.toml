@@ -1,0 +1,11 @@
+# Fallback if a Railway service is still on the Nixpacks builder.
+# Prefer railway.toml (Railpack). Node 22 is current LTS as of this scaffold.
+
+[variables]
+NIXPACKS_NODE_VERSION = "22"
+
+[phases.build]
+cmds = ["npm run build"]
+
+[start]
+cmd = "npm start"
