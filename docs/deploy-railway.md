@@ -11,10 +11,16 @@ production until that happens.
 
 1. In Railway, create a **new project** and a **new service** from GitHub
    `shaiss/circletube` (branch `main` after this scaffold merges).
-2. Leave the builder as **Railpack** (Railway's default; `railway.toml` does
-   not pin a builder). `railway.toml` sets `buildCommand = npm run build`
-   and `startCommand = npm start`. `package.json` `engines.node` is `>=20`;
-   Railpack resolves Node LTS.
+2. Leave the builder as **Railpack** (Railway's default). **New services do
+   not apply `railway.toml`** — Railway deprecated Config as Code for new
+   projects/services ([docs](https://docs.railway.com/config-as-code)); you
+   must set build and deploy in the **service dashboard**:
+   - **Build command:** `npm run build`
+   - **Start command:** `npm start`
+   - **Health check path:** `/api/health`
+   - **Restart policy:** On failure (`ON_FAILURE`, same as `railway.toml`
+     `[deploy].restartPolicyType`)
+   `package.json` `engines.node` is `>=20`; Railpack resolves Node LTS.
 3. If an operator later selects **Nixpacks** in the dashboard, `nixpacks.toml`
    applies (Node 22, the same build, and the same start command). Prefer Railpack.
 4. Do **not** add a Dockerfile unless Railpack/Nixpacks cannot build.
@@ -24,6 +30,14 @@ production until that happens.
    `npm run db:push` (Drizzle only; do not edit tables by hand).
 6. Generate a public HTTPS domain on the service. Record that URL as the
    canonical host in BRIEF/NOTES in a later session — not before it exists.
+
+### `railway.toml` (deprecated Config as Code)
+
+`railway.toml` in this repo mirrors the dashboard values above for
+documentation. It **does not** configure a newly created Circletube service.
+Services that **already** used Config as Code keep honoring the file until
+**2026-12-01** (hard cutoff). Migrating to `.railway/railway.ts` IaC is out of
+scope for this scaffold.
 
 `npm start` is `NODE_ENV=production node dist/index.js`. Vite writes the
 client to `dist/public`; esbuild writes the server to `dist/index.js`.
@@ -60,8 +74,8 @@ store is wired.
 
 - Process stays up: Railway deploy running, logs show `serving on port …`
   (the injected `PORT`).
-- HTTP: `GET /api/health` returns `{ status: "ok" }` (`railway.toml`
-  healthcheck uses this path).
+- HTTP: `GET /api/health` returns `{ status: "ok" }` (health check path from
+  step 2).
 - WebSocket: client upgrade to `wss://<host>/ws` (see
   `server/websocket.ts`). Scheduler ticks only while this process is alive.
 - Not a merge gate (F4): no CI workflow is added by this scaffold.

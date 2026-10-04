@@ -1,7 +1,9 @@
 # Circletube — long-lived Node process (WebSocket `/ws` + ResponseScheduler).
 # Railpack is Railway's default builder (Nixpacks is legacy). No Dockerfile.
-# This file sets build/start/healthcheck only — it does not pin a builder.
-# nixpacks.toml applies only if a service is switched to Nixpacks in the dashboard.
+# New Railway services do NOT apply this file — set build/start/healthcheck/restart
+# in the service dashboard (see docs/deploy-railway.md). Existing Config-as-Code
+# services keep using it until 2026-12-01. nixpacks.toml applies only if Nixpacks
+# is selected in the dashboard.
 
 [build]
 buildCommand = "npm run build"
