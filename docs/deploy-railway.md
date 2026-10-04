@@ -11,11 +11,12 @@ production until that happens.
 
 1. In Railway, create a **new project** and a **new service** from GitHub
    `shaiss/circletube` (branch `main` after this scaffold merges).
-2. Leave the builder as **Railpack** (default). `railway.toml` sets
-   `buildCommand = npm run build` and `startCommand = npm start`.
-   `package.json` `engines.node` is `>=20`; Railpack resolves Node LTS.
-3. If a service is still on the legacy Nixpacks builder, `nixpacks.toml`
-   pins Node 22, the same build, and the same start command. Prefer Railpack.
+2. Leave the builder as **Railpack** (Railway's default; `railway.toml` does
+   not pin a builder). `railway.toml` sets `buildCommand = npm run build`
+   and `startCommand = npm start`. `package.json` `engines.node` is `>=20`;
+   Railpack resolves Node LTS.
+3. If an operator later selects **Nixpacks** in the dashboard, `nixpacks.toml`
+   applies (Node 22, the same build, and the same start command). Prefer Railpack.
 4. Do **not** add a Dockerfile unless Railpack/Nixpacks cannot build.
 5. Set env vars in the Railway dashboard (names only below — never commit
    values). Provision Postgres (or Neon) separately and put its URL in
