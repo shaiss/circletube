@@ -74,8 +74,8 @@ store is wired.
 
 - Process stays up: Railway deploy running, logs show `serving on port …`
   (the injected `PORT`).
-- HTTP: `GET /api/health` returns `{ status: "ok" }` (health check path from
-  step 2).
+- HTTP: `GET /api/health` returns `{ status: "ok", timestamp: "<ISO-8601>" }`
+  (health check path from step 2).
 - WebSocket: client upgrade to `wss://<host>/ws` (see
   `server/websocket.ts`). Scheduler ticks only while this process is alive.
 - Not a merge gate (F4): no CI workflow is added by this scaffold.
