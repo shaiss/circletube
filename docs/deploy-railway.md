@@ -27,7 +27,8 @@ production until that happens.
 5. Set env vars in the Railway dashboard (names only below — never commit
    values). Provision Postgres (or Neon) separately and put its URL in
    `DATABASE_URL`. Run schema push from a trusted machine:
-   `npm run db:push` (Drizzle only; do not edit tables by hand).
+   `npm run db:push` (Drizzle only for application schema; the production
+   session table is separate — see Session store below).
 6. Generate a public HTTPS domain on the service. Record that URL as the
    canonical host in BRIEF/NOTES in a later session — not before it exists.
 
@@ -48,8 +49,8 @@ Production static serving reads `dist/public`. The process listens on
 
 | Name | Why |
 |---|---|
-| `DATABASE_URL` | Postgres connection. `server/db.ts` throws if unset. Drizzle + Neon serverless pool. |
-| `SESSION_SECRET` | Passport/express-session cookie signing. Dev falls back to a plaintext default; production must set this. |
+| `DATABASE_URL` | Postgres for app data (`server/db.ts`) and for the production session store (`connect-pg-simple` in `server/sessionStore.ts`). |
+| `SESSION_SECRET` | Cookie signing for express-session. **Required in production** (fail-fast from #11 / `server/sessionSecret.ts`). Local/dev may omit and get a plaintext fallback with a warning. |
 | `OPENAI_API_KEY` | AI follower replies (`server/openai.ts`, scheduler, some routes). Process can boot without it; replies will fail. |
 
 `PORT` is injected by Railway — do not set it in the dashboard unless you
@@ -65,10 +66,28 @@ know you need to.
 | `ETH_PROVIDER_URL` | Chain RPC; defaults to a public Sepolia Base URL. |
 | `ETH_PRIVATE_KEY` | Contract writes; empty means those paths cannot sign. |
 
-Sessions today use **in-memory** `memorystore` (`server/sessionStore.ts`),
-not `connect-pg-simple` (that package is unused). `DATABASE_URL` is still
-required for app data. Restarts drop login cookies until a Postgres session
-store is wired.
+## Session store
+
+| Environment | Store | Behavior |
+|---|---|---|
+| Production (`NODE_ENV=production`, e.g. `npm start` on Railway) | `connect-pg-simple` on `DATABASE_URL` | Sessions survive process restarts/redeploys |
+| Local / dev (`npm run dev`) | in-memory `memorystore` | Easy local path; restarts drop sessions |
+
+On first production use, `connect-pg-simple` creates the default `session`
+table if it is missing (`createTableIfMissing: true`). Schema matches
+`node_modules/connect-pg-simple/table.sql` (`sid`, `sess`, `expire`). That
+table is **not** managed by Drizzle — keep using `npm run db:push` for
+application schema only. Operators who prefer an explicit DDL step can run
+`table.sql` against the same database before boot.
+
+Fail-fast (unchanged from #11 / #12):
+- Missing `SESSION_SECRET` in production still throws at startup.
+- Missing `DATABASE_URL` in production throws when creating the Postgres
+  session store (and earlier from `server/db.ts` for app data).
+
+Runtime wiring lives in `server/sessionStore.ts` (see also draft PR #13 /
+issue #12). This guide documents the operator-facing behavior so the B1
+scaffold and the durable-session change stay consistent.
 
 ## Health / smoke (after a human deploys)
 
@@ -83,4 +102,5 @@ store is wired.
 ## Out of scope here
 
 Creating the Railway project, writing secrets, provisioning the database,
-and claiming a canonical URL. Admiral merges; agents never merge.
+claiming a canonical URL, WebSocket auth across deploys, and scheduler
+shutdown on redeploy. Admiral merges; agents never merge.
