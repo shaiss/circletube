@@ -13,7 +13,7 @@ import FollowerConfigPage from "@/pages/follower-config-page";
 import UserProfilePage from "@/pages/user-profile-page";
 import { AuthProvider, useAuth } from "@/hooks/use-auth";
 import { ProtectedRoute } from "@/lib/protected-route";
-import { createWebSocket, closeWebSocket, setWebSocketAuthToken, sendWebSocketMessage } from "@/lib/websocket";
+import { createWebSocket, closeWebSocket } from "@/lib/websocket";
 import { useEffect, useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { TourProvider } from "@/components/tour/tour-context";
@@ -35,7 +35,7 @@ function Router() {
 }
 
 function MainApp() {
-  const { user, token } = useAuth();
+  const { user } = useAuth();
 
   const [wsConnectionFailed, setWsConnectionFailed] = useState(false);
   
@@ -52,55 +52,25 @@ function MainApp() {
     };
   }, []);
   
-  // WebSocket connection and authentication
+  // WebSocket connection. The server authenticates /ws from the session
+  // cookie at upgrade time (#14), so no token or in-band auth message is sent.
   useEffect(() => {
     // Only create WebSocket connection when user is authenticated
-    if (user && token) {
+    if (user) {
       console.log('User authenticated, creating WebSocket connection');
       
       // Reset connection failed state on new attempt
       setWsConnectionFailed(false);
       
-      // Set authentication token for WebSocket
-      setWebSocketAuthToken(token);
-      
-      // Create the WebSocket connection
-      const socket = createWebSocket();
-      
-      // Set up listener to send auth message when connection opens
-      const authListener = (event: Event) => {
-        console.log('WebSocket open event, sending authentication');
-        sendWebSocketMessage({
-          type: 'authenticate',
-          token
-        });
-      };
-      
-      // If socket exists and is already open, authenticate now
-      if (socket) {
-        if (socket.readyState === WebSocket.OPEN) {
-          console.log('Socket already open, authenticating now');
-          sendWebSocketMessage({
-            type: 'authenticate',
-            token
-          });
-        } else {
-          // Otherwise wait for connection to open
-          socket.addEventListener('open', authListener);
-        }
-      }
+      // Create the WebSocket connection (reconnect/backoff lives in lib/websocket)
+      createWebSocket();
       
       return () => {
         console.log('Cleaning up WebSocket connection');
-        // Remove auth listener if socket exists
-        if (socket) {
-          socket.removeEventListener('open', authListener);
-        }
-        setWebSocketAuthToken(null);
         closeWebSocket();
       };
     }
-  }, [user?.id, token]); // Only recreate when user ID or token changes
+  }, [user?.id]); // Only recreate when the logged-in user changes
   
   // Message to show if WebSocket connection fails
   const { toast } = useToast();
