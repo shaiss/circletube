@@ -7,6 +7,7 @@ import { promisify } from "util";
 import { storage } from "./storage";
 import { User as SelectUser } from "@shared/schema";
 import { sessionStore } from "./sessionStore";
+import { resolveSessionSecret } from "./sessionSecret";
 
 declare global {
   namespace Express {
@@ -33,7 +34,7 @@ export async function setupAuth(app: Express) {
   const isProduction = process.env.NODE_ENV === "production";
 
   const sessionSettings: session.SessionOptions = {
-    secret: process.env.SESSION_SECRET || "development_secret",
+    secret: resolveSessionSecret(),
     resave: false,
     saveUninitialized: false,
     store: sessionStore,

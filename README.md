@@ -67,6 +67,8 @@ OPENAI_API_KEY=your_openai_api_key
 SESSION_SECRET=your_session_secret
 ```
 
+`SESSION_SECRET` is required when `NODE_ENV=production` (including `npm start`). Local development may omit it and will use a plaintext fallback with a warning; do not rely on that fallback in any deploy.
+
 ### Installation
 1. Clone the repository
 2. Install dependencies:
