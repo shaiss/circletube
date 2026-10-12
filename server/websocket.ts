@@ -15,9 +15,62 @@ interface ExtendedWebSocket extends WebSocket {
 // Active WebSocket connections
 const clients = new Set<ExtendedWebSocket>();
 
+/** Local Vite / Express origins allowed when NODE_ENV !== 'production'. */
+const DEV_ALLOWED_ORIGINS = [
+  'http://localhost:5173',
+  'http://127.0.0.1:5173',
+  'http://localhost:5000',
+  'http://127.0.0.1:5000',
+] as const;
+
 interface UpgradeAuth {
   userId: number;
   sessionID?: string;
+}
+
+/**
+ * Build the trusted Origin allowlist for `/ws` upgrades.
+ * Env names only (no secret values):
+ * - WS_ALLOWED_ORIGINS: comma-separated full origins (e.g. https://app.example.com)
+ * - APP_ORIGIN / PUBLIC_APP_URL: optional single-origin fallbacks if set
+ * In non-production, typical local Vite/dev origins are always included too.
+ * In production, the list must come from those env vars; an empty list rejects all.
+ */
+function getAllowedOrigins(): Set<string> {
+  const origins = new Set<string>();
+
+  const fromList = process.env.WS_ALLOWED_ORIGINS;
+  if (fromList) {
+    for (const part of fromList.split(',')) {
+      const trimmed = part.trim().replace(/\/$/, '');
+      if (trimmed) origins.add(trimmed);
+    }
+  }
+
+  for (const key of ['APP_ORIGIN', 'PUBLIC_APP_URL'] as const) {
+    const value = process.env[key]?.trim();
+    if (value) origins.add(value.replace(/\/$/, ''));
+  }
+
+  if (process.env.NODE_ENV !== 'production') {
+    for (const origin of DEV_ALLOWED_ORIGINS) {
+      origins.add(origin);
+    }
+  }
+
+  return origins;
+}
+
+/**
+ * Browsers always send Origin on WebSocket upgrades. Missing Origin is
+ * rejected in every environment (non-browser clients must not skip the check).
+ */
+function isTrustedOrigin(origin: string | undefined): boolean {
+  if (!origin) {
+    return false;
+  }
+  const normalized = origin.replace(/\/$/, '');
+  return getAllowedOrigins().has(normalized);
 }
 
 /**
@@ -102,6 +155,14 @@ export function initializeWebSocketServer(server: Server, app: Express) {
     if (requestUrl.pathname === '/ws') {
       console.log('[WebSocket] Processing WebSocket upgrade for /ws path');
       socket.on('error', onUpgradeSocketError);
+
+      const originHeader = request.headers.origin;
+      const origin = typeof originHeader === 'string' ? originHeader : undefined;
+      if (!isTrustedOrigin(origin)) {
+        console.warn('[WebSocket] Rejecting /ws upgrade: missing or untrusted Origin', origin ?? '(none)');
+        rejectUpgrade(socket, 403, 'Forbidden');
+        return;
+      }
 
       authenticateUpgrade(request)
         .then((auth) => {
@@ -251,6 +312,42 @@ function handleAuthentication(ws: ExtendedWebSocket) {
     userId: ws.userId,
     timestamp: new Date().toISOString()
   }));
+}
+
+/**
+ * Close every open `/ws` socket tied to a sessionID (e.g. after logout
+ * destroys the session). Client-only close on one tab is not enough.
+ */
+export function closeWebSocketsForSession(sessionID: string) {
+  if (!sessionID) {
+    return;
+  }
+
+  const toClose: ExtendedWebSocket[] = [];
+  clients.forEach((client) => {
+    if (client.sessionID === sessionID) {
+      toClose.push(client);
+    }
+  });
+
+  for (const client of toClose) {
+    console.log(`[WebSocket] Closing socket for ended session ${sessionID}`);
+    try {
+      if (client.readyState === WebSocket.OPEN || client.readyState === WebSocket.CONNECTING) {
+        client.close(1000, 'Session ended');
+      } else {
+        client.terminate();
+      }
+    } catch (error) {
+      console.error('[WebSocket] Error closing socket on session end:', error);
+      try {
+        client.terminate();
+      } catch {
+        // ignore
+      }
+    }
+    clients.delete(client);
+  }
 }
 
 /**

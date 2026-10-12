@@ -122,10 +122,21 @@ export async function setupAuth(app: Express) {
   });
 
   app.post("/api/logout", (req, res, next) => {
+    // Capture before destroy; needed to close every tab's /ws for this session.
+    const sessionID = req.sessionID;
     req.logout((err) => {
       if (err) return next(err);
-      req.session.destroy((err) => {
-        if (err) return next(err);
+      req.session.destroy((destroyErr) => {
+        if (destroyErr) return next(destroyErr);
+        // Dynamic import avoids a load-time cycle with websocket.ts
+        // (which imports getSessionMiddleware from this module).
+        void import("./websocket")
+          .then(({ closeWebSocketsForSession }) => {
+            if (sessionID) closeWebSocketsForSession(sessionID);
+          })
+          .catch((closeErr) => {
+            console.error("[Auth] Failed to close WebSockets on logout:", closeErr);
+          });
         res.sendStatus(200);
       });
     });
