@@ -73,32 +73,23 @@ process.on('unhandledRejection', (reason, promise) => {
       serveStatic(app);
     }
 
-    const port = 5000;
+    // Railway (and similar hosts) inject PORT; fall back to 5000 for local prod runs.
+    const port = Number(process.env.PORT) || 5000;
 
-    // Handle server errors
     server.on('error', (error: any) => {
       if (error.code === 'EADDRINUSE') {
-        console.error(`Port ${port} is already in use. Using a different port...`);
-        
-        // Try with a different port
-        const newPort = 5001;
-        server.listen({
-          port: newPort,
-          host: "0.0.0.0",
-          reusePort: true,
-        }, () => {
-          log(`serving on port ${newPort} (fallback)`);
-        });
+        console.error(`Port ${port} is already in use.`);
+        process.exit(1);
       } else {
         console.error('Server error:', error);
         process.exit(1);
       }
     });
 
+    // Bind all interfaces; do not set reusePort (SO_REUSEPORT can fail on some hosts).
     server.listen({
       port,
       host: "0.0.0.0",
-      reusePort: true,
     }, () => {
       log(`serving on port ${port}`);
     });
