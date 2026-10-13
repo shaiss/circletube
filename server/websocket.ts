@@ -331,7 +331,7 @@ export function closeWebSocketsForSession(sessionID: string) {
   });
 
   for (const client of toClose) {
-    console.log(`[WebSocket] Closing socket for ended session ${sessionID}`);
+    console.log(`[WebSocket] Closing socket for ended session (user ${client.userId ?? 'unknown'})`);
     try {
       if (client.readyState === WebSocket.OPEN || client.readyState === WebSocket.CONNECTING) {
         client.close(1000, 'Session ended');
