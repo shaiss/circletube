@@ -1,6 +1,6 @@
 import passport from "passport";
 import { Strategy as LocalStrategy } from "passport-local";
-import { Express } from "express";
+import type { Express, RequestHandler } from "express";
 import session from "express-session";
 import { scrypt, randomBytes, timingSafeEqual } from "crypto";
 import { promisify } from "util";
@@ -30,7 +30,16 @@ async function comparePasswords(supplied: string, stored: string) {
   return timingSafeEqual(hashedBuf, suppliedBuf);
 }
 
-export async function setupAuth(app: Express) {
+let sessionMiddleware: RequestHandler | null = null;
+
+/**
+ * Single express-session middleware (same store, secret, and cookie settings)
+ * shared by HTTP routes and the `/ws` upgrade in server/websocket.ts, so a
+ * WebSocket is authenticated by the same session cookie as `/api/*`.
+ */
+export function getSessionMiddleware(): RequestHandler {
+  if (sessionMiddleware) return sessionMiddleware;
+
   const isProduction = process.env.NODE_ENV === "production";
 
   const sessionSettings: session.SessionOptions = {
@@ -47,12 +56,19 @@ export async function setupAuth(app: Express) {
     name: 'connect.sid' // Changed from 'sid' to match the default used by express-session
   };
 
+  sessionMiddleware = session(sessionSettings);
+  return sessionMiddleware;
+}
+
+export async function setupAuth(app: Express) {
+  const isProduction = process.env.NODE_ENV === "production";
+
   // Only set trust proxy in production
   if (isProduction) {
     app.set('trust proxy', 1);
   }
 
-  app.use(session(sessionSettings));
+  app.use(getSessionMiddleware());
   app.use(passport.initialize());
   app.use(passport.session());
 
@@ -106,10 +122,21 @@ export async function setupAuth(app: Express) {
   });
 
   app.post("/api/logout", (req, res, next) => {
+    // Capture before destroy; needed to close every tab's /ws for this session.
+    const sessionID = req.sessionID;
     req.logout((err) => {
       if (err) return next(err);
-      req.session.destroy((err) => {
-        if (err) return next(err);
+      req.session.destroy((destroyErr) => {
+        if (destroyErr) return next(destroyErr);
+        // Dynamic import avoids a load-time cycle with websocket.ts
+        // (which imports getSessionMiddleware from this module).
+        void import("./websocket")
+          .then(({ closeWebSocketsForSession }) => {
+            if (sessionID) closeWebSocketsForSession(sessionID);
+          })
+          .catch((closeErr) => {
+            console.error("[Auth] Failed to close WebSockets on logout:", closeErr);
+          });
         res.sendStatus(200);
       });
     });
