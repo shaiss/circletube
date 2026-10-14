@@ -256,29 +256,29 @@ router.post("/analyze-metric", requireAuth, async (req, res) => {
       if (labId !== undefined && metricIndex !== undefined) {
         try {
           // Get existing results or create new structure
-          const existingResults = await storage.getLabAnalysisResult(labId) || {
-            labId,
-            metricResults: [],
-            recommendation: null,
-            updatedAt: new Date().toISOString()
-          };
+          const cached = await storage.getLabAnalysisResult(labId);
+          const metricResults: any[] = cached
+            ? [...(cached.metricResults as any[])]
+            : [];
           
           // Update the specific metric result
-          if (existingResults.metricResults.length <= metricIndex) {
+          if (metricResults.length <= metricIndex) {
             // Extend the array if needed
-            while (existingResults.metricResults.length < metricIndex) {
-              existingResults.metricResults.push({} as any);
+            while (metricResults.length < metricIndex) {
+              metricResults.push({});
             }
-            existingResults.metricResults.push(result);
+            metricResults.push(result);
           } else {
             // Update existing entry
-            existingResults.metricResults[metricIndex] = result;
+            metricResults[metricIndex] = result;
           }
           
-          existingResults.updatedAt = new Date().toISOString();
-          
           // Save updated results
-          await storage.saveLabAnalysisResult(labId, existingResults.metricResults, existingResults.recommendation);
+          await storage.saveLabAnalysisResult(
+            labId,
+            metricResults,
+            cached?.recommendation ?? null
+          );
           console.log(`[MetricsAnalysis] Cached results for lab ${labId}, metric index ${metricIndex}`);
         } catch (cacheError) {
           console.error("Error caching analysis results:", cacheError);
