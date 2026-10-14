@@ -322,7 +322,14 @@ async function isSessionStillValid(sessionID: string | undefined): Promise<boole
  * expiry (no logout) stops delivery and closes those sockets (#16).
  */
 export async function broadcastWebSocketMessage(message: any, userIds?: number[]) {
-  const serializedMessage = JSON.stringify(message);
+  let serializedMessage: string;
+  try {
+    serializedMessage = JSON.stringify(message);
+  } catch (error) {
+    console.error('[WebSocket] Failed to serialize broadcast message:', error);
+    return;
+  }
+
   const sessionValidity = new Map<string, boolean>();
   const expiredSessions = new Set<string>();
   const snapshot = Array.from(clients);
@@ -372,7 +379,11 @@ export async function broadcastWebSocketMessage(message: any, userIds?: number[]
     }
 
     if (client.readyState === WebSocket.OPEN) {
-      client.send(serializedMessage);
+      try {
+        client.send(serializedMessage);
+      } catch (error) {
+        console.error(`[WebSocket] Failed to send to user ${client.userId}:`, error);
+      }
     }
   }
 

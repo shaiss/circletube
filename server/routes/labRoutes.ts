@@ -220,7 +220,9 @@ router.patch('/:id/status', requireAuth, async (req, res) => {
             type: 'lab_activation_started',
             labId,
             message: 'Publishing lab content to circles...'
-          }, [req.user!.id]);
+          }, [req.user!.id]).catch((err) => {
+            console.error('[Lab Activation] Failed to broadcast activation started:', err);
+          });
           
           await storage.publishLabContent(labId);
           
@@ -230,7 +232,9 @@ router.patch('/:id/status', requireAuth, async (req, res) => {
             labId,
             success: true,
             message: 'Lab content successfully published to circles with AI responses scheduled'
-          }, [req.user!.id]);
+          }, [req.user!.id]).catch((err) => {
+            console.error('[Lab Activation] Failed to broadcast activation completed:', err);
+          });
           
           console.log(`[Lab Activation] Successfully published content for lab ${labId}`);
         } catch (contentError) {
@@ -246,7 +250,9 @@ router.patch('/:id/status', requireAuth, async (req, res) => {
             success: false,
             error: 'Failed to publish some lab content. Please check the lab status.',
             message: 'Lab activation encountered an issue'
-          }, [req.user!.id]);
+          }, [req.user!.id]).catch((err) => {
+            console.error('[Lab Activation] Failed to broadcast activation error:', err);
+          });
         }
       });
     }
