@@ -387,7 +387,7 @@ export async function broadcastWebSocketMessage(message: any, userIds?: number[]
     }
   }
 
-  for (const sid of expiredSessions) {
+  for (const sid of Array.from(expiredSessions)) {
     closeWebSocketsForSession(sid);
   }
 }
