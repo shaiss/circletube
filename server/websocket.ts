@@ -330,29 +330,23 @@ export async function broadcastWebSocketMessage(message: any, userIds?: number[]
     return;
   }
 
-  const sessionValidity = new Map<string, boolean>();
   const expiredSessions = new Set<string>();
-  const snapshot = Array.from(clients);
+  const targets = Array.from(clients).filter(
+    (client) => !!client.userId && (!userIds || userIds.includes(client.userId)),
+  );
 
-  for (const client of snapshot) {
-    if (!client.userId) {
-      continue;
-    }
+  // Resolve each distinct session once, concurrently, so one slow store lookup
+  // does not serialize delivery to every other client.
+  const uniqueSessionIds = Array.from(
+    new Set(targets.map((client) => client.sessionID).filter((sid): sid is string => !!sid)),
+  );
+  const validityResults = await Promise.all(uniqueSessionIds.map((sid) => isSessionStillValid(sid)));
+  const sessionValidity = new Map<string, boolean>();
+  uniqueSessionIds.forEach((sid, i) => sessionValidity.set(sid, validityResults[i]));
 
-    if (userIds && !userIds.includes(client.userId)) {
-      continue;
-    }
-
+  for (const client of targets) {
     const sid = client.sessionID;
-    let valid: boolean;
-    if (!sid) {
-      valid = false;
-    } else if (sessionValidity.has(sid)) {
-      valid = sessionValidity.get(sid)!;
-    } else {
-      valid = await isSessionStillValid(sid);
-      sessionValidity.set(sid, valid);
-    }
+    const valid = sid ? sessionValidity.get(sid) === true : false;
 
     if (!valid) {
       if (sid) {
