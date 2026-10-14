@@ -49,7 +49,9 @@ export function hasToolEnabled(follower: AiFollower, toolId: string): boolean {
     return false;
   }
 
-  const tool = follower.tools.equipped.find(t => t.id === toolId);
+  const tool = (follower.tools.equipped as Array<{ id: string; enabled: boolean }>).find(
+    (t) => t.id === toolId
+  );
   return !!tool && tool.enabled;
 }
 
