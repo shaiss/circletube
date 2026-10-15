@@ -60,6 +60,7 @@ export function createTestFollower(overrides: Partial<AiFollower> = {}): AiFollo
     active: true,
     parentId: null,
     responseChance: 50,
+    responseDelay: { min: 1, max: 60 },
     interactionPreferences: null,
     tools: null,
     ...overrides
@@ -82,6 +83,7 @@ export function createTestCircle(overrides: Partial<Circle> = {}): Circle {
     isDefault: false,
     visibility: 'private',
     createdAt: new Date(),
+    addedAt: null,
     ...overrides
   };
 }
@@ -96,7 +98,7 @@ export function createTestCircleMember(overrides: Partial<CircleMember> = {}): C
     id: 1,
     circleId: 1,
     userId: 1,
-    role: 'member',
+    role: 'collaborator',
     status: 'active',
     joinedAt: new Date(),
     ...overrides

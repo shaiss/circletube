@@ -166,7 +166,7 @@ export function FollowerCard({
             <div>
               <p className="text-sm font-medium">Interests:</p>
               <div className="flex flex-wrap gap-2 mt-1">
-                {follower.interests.map((interest, i) => (
+                {follower.interests.map((interest: string, i: number) => (
                   <span
                     key={i}
                     className="text-xs bg-secondary px-2 py-1 rounded-full"
