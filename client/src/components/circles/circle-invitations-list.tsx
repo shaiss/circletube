@@ -1,4 +1,4 @@
-import { Circle, CircleInvitation } from "@shared/schema";
+import { AiFollower, Circle, CircleInvitation, CircleMember, User } from "@shared/schema";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useRespondToInvitation } from "@/lib/mutations/circle-mutations";
@@ -9,6 +9,13 @@ import { useQuery } from "@tanstack/react-query";
 
 interface CircleInvitationsListProps {
   invitations: (CircleInvitation & { circle: Circle })[];
+}
+
+interface CircleDetailsResponse {
+  circle: Circle;
+  owner: User;
+  members: (CircleMember & { username: string })[];
+  followers: AiFollower[];
 }
 
 export function CircleInvitationsList({ invitations }: CircleInvitationsListProps) {
@@ -25,7 +32,7 @@ export function CircleInvitationsList({ invitations }: CircleInvitationsListProp
         <div className="space-y-4">
           {invitations.map((invitation) => {
             // Fetch circle details including members and followers
-            const { data: details } = useQuery({
+            const { data: details } = useQuery<CircleDetailsResponse>({
               queryKey: [`/api/circles/${invitation.circle.id}/details`],
               enabled: !!invitation.circle.id,
             });
@@ -34,7 +41,7 @@ export function CircleInvitationsList({ invitations }: CircleInvitationsListProp
               <div
                 key={invitation.id}
                 className="flex flex-col gap-4 p-4 border rounded-lg"
-                style={{ borderColor: invitation.circle.color }}
+                style={{ borderColor: invitation.circle.color ?? undefined }}
               >
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-4">
