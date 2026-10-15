@@ -864,7 +864,8 @@ export class MockStorage implements IStorage {
       role: 'control' | 'treatment' | 'observation';
       memberCount: number;
       followerCount: number;
-      addedAt: Date;
+      addedAt: Date | null;
+      circleId: number;
     })[]
   > {
     const links = await this.getLabCircles(labId);
@@ -874,7 +875,8 @@ export class MockStorage implements IStorage {
         role: link.role,
         memberCount: await this.getCircleMemberCount(link.circleId),
         followerCount: await this.getCircleFollowerCount(link.circleId),
-        addedAt: link.addedAt ?? new Date(),
+        addedAt: link.addedAt ?? null,
+        circleId: link.circleId,
       }))
     );
   }
