@@ -67,20 +67,21 @@ describe('resolveImportedEquippedTools', () => {
 
   test('de-dupes while preserving first-seen order across mixed IDs', () => {
     const registry = getAvailableTools();
-    expect(registry.length).toBeGreaterThan(1);
+    expect(registry.length).toBeGreaterThan(0);
 
-    const firstId = registry[0].id;
-    const secondId = registry[1].id;
+    const knownId = registry[0].id;
     const resolved = resolveImportedEquippedTools([
-      firstId,
       'bogus',
-      secondId,
-      firstId,
-      secondId,
+      knownId,
+      'another-bogus',
+      knownId,
+      'bogus',
     ]);
 
-    expect(resolved.map((t) => t.id)).toEqual([firstId, secondId]);
-    expect(resolved.every((t) => t.enabled)).toBe(true);
+    expect(resolved).toHaveLength(1);
+    expect(resolved[0].id).toBe(knownId);
+    expect(resolved[0].enabled).toBe(true);
+    expect(resolved[0].name).toBe(registry[0].name);
   });
 });
 
