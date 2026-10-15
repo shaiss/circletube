@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, boolean, timestamp, json } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, timestamp, json, type AnyPgColumn } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 import { relations } from "drizzle-orm";
@@ -114,8 +114,8 @@ export const ai_followers = pgTable("ai_followers", {
     }>;
     customInstructions: string;
   }>(),
-  // Parent-child relationship for clones
-  parentId: integer("parent_id").references(() => ai_followers.id),
+  // Parent-child relationship for clones (AnyPgColumn breaks self-ref circular inference)
+  parentId: integer("parent_id").references((): AnyPgColumn => ai_followers.id),
 });
 
 export const pendingResponses = pgTable("pending_responses", {
