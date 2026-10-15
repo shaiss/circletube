@@ -275,7 +275,10 @@ export default function FollowerConfigPage() {
   };
 
   // Check if this is the default Tom follower (ID 1 or name includes "Tom")
-  const isDefaultTom = follower?.id === 1 || (follower?.name && follower.name.toLowerCase().includes('tom'));
+  // Coerce to boolean: `name && includes(...)` can be "" | undefined under strict checks
+  const isDefaultTom =
+    follower?.id === 1 ||
+    (!!follower?.name && follower.name.toLowerCase().includes("tom"));
   console.log("[ConfigPage] Is default Tom?", isDefaultTom);
   
   // Save all settings
