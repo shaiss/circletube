@@ -199,6 +199,16 @@ router.post('/import', requireAuth, async (req, res) => {
       schemaVersion: followerData.schemaVersion || "1.0"
     };
     
+    // Map import profile (string tool ids) onto AiFollower column shapes.
+    // ai_followers has no metadata column; keep provenance in logs only.
+    console.log("[Import] AI follower import metadata:", importMetadata);
+    const equippedTools = (followerData.tools?.equipped ?? []).map((toolId) => ({
+      id: toolId,
+      name: toolId,
+      description: "",
+      enabled: true,
+    }));
+
     // Create the follower using the storage interface
     const newFollower = await storage.createAiFollower(
       req.user!.id, 
@@ -212,11 +222,13 @@ router.post('/import', requireAuth, async (req, res) => {
         interactionPreferences: followerData.interactionPreferences || { likes: [], dislikes: [] },
         active: followerData.active,
         responsiveness: followerData.responsiveness,
-        responseDelay: followerData.responseDelay,
-        responseChance: followerData.responseChance,
-        tools: followerData.tools || { equipped: [], customInstructions: "" },
+        responseDelay: followerData.responseDelay ?? { min: 1, max: 60 },
+        responseChance: followerData.responseChance ?? 80,
+        tools: {
+          equipped: equippedTools,
+          customInstructions: followerData.tools?.customInstructions ?? "",
+        },
         parentId: null, // Required field
-        metadata: JSON.stringify(importMetadata) // Store metadata as JSON string
       }
     );
     
