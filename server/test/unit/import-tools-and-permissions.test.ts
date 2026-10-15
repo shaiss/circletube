@@ -1,7 +1,8 @@
 /**
- * Unit tests for CodeRabbit follow-ups on PR #25:
- * - resolveImportedEquippedTools filters unknown tool IDs
+ * Unit tests for CodeRabbit follow-ups on PR #25 / #26:
+ * - resolveImportedEquippedTools filters unknown tool IDs and de-dupes
  * - MockStorage.hasCirclePermission ranks collaborator correctly
+ * - MockStorage.hasCirclePermission fails closed for unknown requiredRole
  */
 
 import { resolveImportedEquippedTools, getAvailableTools } from '../../tools';
@@ -42,6 +43,41 @@ describe('resolveImportedEquippedTools', () => {
       knownId,
       'another-bogus',
     ]);
+    expect(resolved).toHaveLength(1);
+    expect(resolved[0].id).toBe(knownId);
+    expect(resolved[0].enabled).toBe(true);
+    expect(resolved[0].name).toBe(registry[0].name);
+  });
+
+  test('de-dupes duplicate equipped IDs (first-seen order)', () => {
+    const registry = getAvailableTools();
+    expect(registry.length).toBeGreaterThan(0);
+
+    const knownId = registry[0].id;
+    const resolved = resolveImportedEquippedTools([knownId, knownId]);
+
+    expect(resolved).toHaveLength(1);
+    expect(resolved[0]).toEqual({
+      id: registry[0].id,
+      name: registry[0].name,
+      description: registry[0].description,
+      enabled: true,
+    });
+  });
+
+  test('de-dupes while preserving first-seen order across mixed IDs', () => {
+    const registry = getAvailableTools();
+    expect(registry.length).toBeGreaterThan(0);
+
+    const knownId = registry[0].id;
+    const resolved = resolveImportedEquippedTools([
+      'bogus',
+      knownId,
+      'another-bogus',
+      knownId,
+      'bogus',
+    ]);
+
     expect(resolved).toHaveLength(1);
     expect(resolved[0].id).toBe(knownId);
     expect(resolved[0].enabled).toBe(true);
@@ -90,5 +126,31 @@ describe('MockStorage.hasCirclePermission collaborator ranking', () => {
     expect(
       await storage.hasCirclePermission(userId, circleId, 'collaborator')
     ).toBe(false);
+  });
+
+  test('unknown requiredRole fails closed for valid members', async () => {
+    const storage = new MockStorage();
+    const circleId = 44;
+    const userId = 101;
+    const { id: _id, ...member } = createTestCircleMember({
+      circleId,
+      userId,
+      role: 'owner',
+    });
+    await storage.addCircleMember(member);
+
+    expect(
+      await storage.hasCirclePermission(userId, circleId, 'admin')
+    ).toBe(false);
+    expect(
+      await storage.hasCirclePermission(userId, circleId, 'superuser')
+    ).toBe(false);
+    // Known roles still behave as before
+    expect(await storage.hasCirclePermission(userId, circleId, 'owner')).toBe(
+      true
+    );
+    expect(await storage.hasCirclePermission(userId, circleId, 'viewer')).toBe(
+      true
+    );
   });
 });

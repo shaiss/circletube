@@ -195,7 +195,11 @@ export class MockStorage implements IStorage {
     const roles = ['viewer', 'collaborator', 'owner'];
     const userRoleIndex = roles.indexOf(circleMember.role);
     const requiredRoleIndex = roles.indexOf(requiredRole);
-    
+
+    // Fail closed for unknown requiredRole (indexOf === -1 would otherwise
+    // make every valid member role pass the comparison).
+    if (requiredRoleIndex === -1) return false;
+
     return userRoleIndex >= requiredRoleIndex;
   }
 
