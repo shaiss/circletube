@@ -189,8 +189,10 @@ export class MockStorage implements IStorage {
     if (!circleMember) return false;
     if (!requiredRole) return true;
     
-    // Check if the user has the required role or higher
-    const roles = ['viewer', 'member', 'moderator', 'admin', 'owner'];
+    // Check if the user has the required role or higher.
+    // Order matches shared/schema.ts circle member roles and middleware privilege:
+    // viewer < collaborator < owner.
+    const roles = ['viewer', 'collaborator', 'owner'];
     const userRoleIndex = roles.indexOf(circleMember.role);
     const requiredRoleIndex = roles.indexOf(requiredRole);
     
