@@ -4,6 +4,7 @@ import { requireAuth, hasCirclePermission } from './middleware';
 import { generateAIBackground } from '../openai';
 import { cloneFollowers } from '../clone-service';
 import { AIFollowerProfileSchema } from '../../shared/follower-profile-schema';
+import { resolveImportedEquippedTools } from '../tools';
 
 const router = Router();
 
@@ -191,14 +192,30 @@ router.post('/import', requireAuth, async (req, res) => {
     
     const followerData = result.data;
     
-    // Add metadata about the import
+    // Import provenance object (same shape as before). ai_followers has no
+    // metadata column, so this is not persisted — and must not be logged whole,
+    // because originalMetadata / schemaVersion are request-controlled free-form.
     const importMetadata = {
       importedAt: new Date().toISOString(),
       importedBy: req.user!.id,
       originalMetadata: followerData.metadata || null,
       schemaVersion: followerData.schemaVersion || "1.0"
     };
-    
+
+    // Map import profile (string tool ids) onto AiFollower column shapes.
+    // Filter through the tool registry: drop unknown IDs, keep registry
+    // name/description, and enable known tools (import still means "enable").
+    const requestedToolIds = followerData.tools?.equipped ?? [];
+    const equippedTools = resolveImportedEquippedTools(requestedToolIds);
+
+    console.log("[Import] AI follower import:", {
+      importedAt: importMetadata.importedAt,
+      importedBy: importMetadata.importedBy,
+      hasMetadata: importMetadata.originalMetadata != null,
+      requestedToolCount: requestedToolIds.length,
+      equippedToolCount: equippedTools.length,
+    });
+
     // Create the follower using the storage interface
     const newFollower = await storage.createAiFollower(
       req.user!.id, 
@@ -212,11 +229,13 @@ router.post('/import', requireAuth, async (req, res) => {
         interactionPreferences: followerData.interactionPreferences || { likes: [], dislikes: [] },
         active: followerData.active,
         responsiveness: followerData.responsiveness,
-        responseDelay: followerData.responseDelay,
-        responseChance: followerData.responseChance,
-        tools: followerData.tools || { equipped: [], customInstructions: "" },
+        responseDelay: followerData.responseDelay ?? { min: 1, max: 60 },
+        responseChance: followerData.responseChance ?? 80,
+        tools: {
+          equipped: equippedTools,
+          customInstructions: followerData.tools?.customInstructions ?? "",
+        },
         parentId: null, // Required field
-        metadata: JSON.stringify(importMetadata) // Store metadata as JSON string
       }
     );
     

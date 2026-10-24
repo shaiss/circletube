@@ -80,9 +80,14 @@ export class MockStorage implements IStorage {
     return this.followers.find(follower => follower.id === id) || null;
   }
 
-  async updateAiFollower(id: number, updates: Partial<AiFollower>): Promise<AiFollower | null> {
+  async updateAiFollower(
+    id: number,
+    updates: Partial<Pick<AiFollower, "name" | "personality" | "responsiveness" | "background" | "communicationStyle" | "tools">>,
+  ): Promise<AiFollower> {
     const followerIndex = this.followers.findIndex(follower => follower.id === id);
-    if (followerIndex === -1) return null;
+    if (followerIndex === -1) {
+      throw new Error(`AI follower ${id} not found`);
+    }
     
     this.followers[followerIndex] = { ...this.followers[followerIndex], ...updates };
     return this.followers[followerIndex];
@@ -94,20 +99,27 @@ export class MockStorage implements IStorage {
     return initialLength > this.followers.length;
   }
 
-  async deactivateAiFollower(id: number): Promise<boolean> {
+  async deactivateAiFollower(id: number): Promise<AiFollower> {
     const follower = await this.getAiFollowerById(id);
-    if (!follower) return false;
+    if (!follower) {
+      throw new Error(`AI follower ${id} not found`);
+    }
     
-    await this.updateAiFollower(id, { active: false });
-    return true;
+    // MockStorage keeps a local active flag update; IStorage returns the follower.
+    const followerIndex = this.followers.findIndex(f => f.id === id);
+    this.followers[followerIndex] = { ...follower, active: false };
+    return this.followers[followerIndex];
   }
 
-  async reactivateAiFollower(id: number): Promise<boolean> {
+  async reactivateAiFollower(id: number): Promise<AiFollower> {
     const follower = await this.getAiFollowerById(id);
-    if (!follower) return false;
+    if (!follower) {
+      throw new Error(`AI follower ${id} not found`);
+    }
     
-    await this.updateAiFollower(id, { active: true });
-    return true;
+    const followerIndex = this.followers.findIndex(f => f.id === id);
+    this.followers[followerIndex] = { ...follower, active: true };
+    return this.followers[followerIndex];
   }
 
   // Post methods
@@ -177,11 +189,17 @@ export class MockStorage implements IStorage {
     if (!circleMember) return false;
     if (!requiredRole) return true;
     
-    // Check if the user has the required role or higher
-    const roles = ['viewer', 'member', 'moderator', 'admin', 'owner'];
+    // Check if the user has the required role or higher.
+    // Order matches shared/schema.ts circle member roles and middleware privilege:
+    // viewer < collaborator < owner.
+    const roles = ['viewer', 'collaborator', 'owner'];
     const userRoleIndex = roles.indexOf(circleMember.role);
     const requiredRoleIndex = roles.indexOf(requiredRole);
-    
+
+    // Fail closed for unknown requiredRole (indexOf === -1 would otherwise
+    // make every valid member role pass the comparison).
+    if (requiredRoleIndex === -1) return false;
+
     return userRoleIndex >= requiredRoleIndex;
   }
 

@@ -41,6 +41,39 @@ export function getAvailableTools(): Omit<AITool, 'execute'>[] {
   }));
 }
 
+export type EquippedToolRecord = {
+  id: string;
+  name: string;
+  description: string;
+  enabled: boolean;
+};
+
+/**
+ * Resolve import-profile tool IDs against the registry.
+ * Unknown IDs are dropped; duplicates are de-duped (first-seen order);
+ * known tools keep registry name/description and are enabled.
+ */
+export function resolveImportedEquippedTools(toolIds: string[]): EquippedToolRecord[] {
+  const registry = getAvailableTools();
+  const byId = new Map(registry.map((tool) => [tool.id, tool]));
+  const seen = new Set<string>();
+
+  const resolved: EquippedToolRecord[] = [];
+  for (const toolId of toolIds) {
+    if (seen.has(toolId)) continue;
+    seen.add(toolId);
+    const tool = byId.get(toolId);
+    if (!tool) continue;
+    resolved.push({
+      id: tool.id,
+      name: tool.name,
+      description: tool.description,
+      enabled: true,
+    });
+  }
+  return resolved;
+}
+
 /**
  * Checks if an AI follower has a specific tool equipped and enabled
  */
