@@ -296,22 +296,28 @@ export function closeWebSocketsForSession(sessionID: string) {
   }
 }
 
-async function isSessionStillValid(sessionID: string | undefined): Promise<boolean> {
+type SessionValidity = 'valid' | 'invalid' | 'unknown';
+
+async function isSessionStillValid(sessionID: string | undefined): Promise<SessionValidity> {
   if (!sessionID) {
-    return false;
+    return 'invalid';
   }
 
   try {
     const sess = await getSession(sessionID);
     if (!sess) {
-      return false;
+      return 'invalid';
     }
     const passportData = (sess as { passport?: { user?: unknown } }).passport;
     const userId = Number(passportData?.user);
-    return Number.isInteger(userId) && userId > 0;
-  } catch (error) {
-    console.error('[WebSocket] Session revalidation failed:', error);
-    return false;
+    return Number.isInteger(userId) && userId > 0 ? 'valid' : 'invalid';
+  } catch {
+    // Store/transient errors must not be treated as expiry: client ignores close
+    // code 1000 and would stop reconnecting until a full page reload.
+    console.warn(
+      '[WebSocket] Session store lookup failed during revalidation; treating as unknown',
+    );
+    return 'unknown';
   }
 }
 
@@ -341,43 +347,49 @@ export async function broadcastWebSocketMessage(message: any, userIds?: number[]
     new Set(targets.map((client) => client.sessionID).filter((sid): sid is string => !!sid)),
   );
   const validityResults = await Promise.all(uniqueSessionIds.map((sid) => isSessionStillValid(sid)));
-  const sessionValidity = new Map<string, boolean>();
+  const sessionValidity = new Map<string, SessionValidity>();
   uniqueSessionIds.forEach((sid, i) => sessionValidity.set(sid, validityResults[i]));
 
   for (const client of targets) {
     const sid = client.sessionID;
-    const valid = sid ? sessionValidity.get(sid) === true : false;
+    const validity: SessionValidity | undefined = sid ? sessionValidity.get(sid) : undefined;
 
-    if (!valid) {
-      if (sid) {
-        expiredSessions.add(sid);
-      } else {
-        console.log(`[WebSocket] Closing socket with no session (user ${client.userId})`);
+    if (validity === 'valid') {
+      if (client.readyState === WebSocket.OPEN) {
         try {
-          if (client.readyState === WebSocket.OPEN || client.readyState === WebSocket.CONNECTING) {
-            client.close(1000, 'Session ended');
-          } else {
-            client.terminate();
-          }
+          client.send(serializedMessage);
         } catch (error) {
-          console.error('[WebSocket] Error closing socket without session:', error);
-          try {
-            client.terminate();
-          } catch {
-            // ignore
-          }
+          console.error(`[WebSocket] Failed to send to user ${client.userId}:`, error);
         }
-        clients.delete(client);
       }
       continue;
     }
 
-    if (client.readyState === WebSocket.OPEN) {
+    // Transient store failure: skip this delivery, keep the socket open.
+    if (validity === 'unknown') {
+      continue;
+    }
+
+    // Confirmed invalid, or missing session id on the socket.
+    if (sid) {
+      expiredSessions.add(sid);
+    } else {
+      console.log(`[WebSocket] Closing socket with no session (user ${client.userId})`);
       try {
-        client.send(serializedMessage);
+        if (client.readyState === WebSocket.OPEN || client.readyState === WebSocket.CONNECTING) {
+          client.close(1000, 'Session ended');
+        } else {
+          client.terminate();
+        }
       } catch (error) {
-        console.error(`[WebSocket] Failed to send to user ${client.userId}:`, error);
+        console.error('[WebSocket] Error closing socket without session:', error);
+        try {
+          client.terminate();
+        } catch {
+          // ignore
+        }
       }
+      clients.delete(client);
     }
   }
 
