@@ -96,20 +96,23 @@ router.post("/analyze-metric", requireAuth, async (req, res) => {
     if (labId && metricIndex !== undefined && !forceRefresh) {
       const cachedResults = await storage.getLabAnalysisResult(labId);
 
-      if (
+      const cachedEntry =
         cachedResults &&
-        cachedResults.metricResults &&
         Array.isArray(cachedResults.metricResults) &&
         metricIndex < cachedResults.metricResults.length
-      ) {
+          ? cachedResults.metricResults[metricIndex]
+          : undefined;
+
+      // Treat as cached only when the entry is non-null and has an analysis
+      if (cachedEntry != null && cachedEntry.analysis) {
         console.log(
           `[MetricsAnalysis] Using cached analysis for lab ${labId}, metric index ${metricIndex}`,
         );
 
         return res.json({
-          ...cachedResults.metricResults[metricIndex],
+          ...cachedEntry,
           fromCache: true,
-          updatedAt: cachedResults.updatedAt,
+          updatedAt: cachedResults!.updatedAt,
         });
       }
     }
@@ -142,6 +145,26 @@ router.post("/analyze-metric", requireAuth, async (req, res) => {
       });
     }
     
+    // Bound metricIndex before OpenAI / cache extension to prevent unbounded allocation
+    if (labId !== undefined && metricIndex !== undefined) {
+      let metricCap = 50;
+      const lab = await storage.getLab(Number(labId));
+      const labMetrics = lab?.successMetrics?.metrics;
+      if (Array.isArray(labMetrics)) {
+        metricCap = labMetrics.length;
+      }
+      if (
+        !Number.isInteger(metricIndex) ||
+        metricIndex < 0 ||
+        metricIndex >= metricCap
+      ) {
+        return res.status(400).json({
+          error: "Invalid metricIndex",
+          message: `metricIndex must be an integer in [0, ${metricCap})`,
+        });
+      }
+    }
+
     try {
       console.log(`[MetricsAnalysis] Preparing OpenAI request for metric analysis: ${metric.name}`);
       
@@ -261,15 +284,13 @@ router.post("/analyze-metric", requireAuth, async (req, res) => {
             ? [...(cached.metricResults as any[])]
             : [];
           
-          // Update the specific metric result
+          // Update the specific metric result; fill gaps with null (not {})
           if (metricResults.length <= metricIndex) {
-            // Extend the array if needed
             while (metricResults.length < metricIndex) {
-              metricResults.push({});
+              metricResults.push(null);
             }
             metricResults.push(result);
           } else {
-            // Update existing entry
             metricResults[metricIndex] = result;
           }
           
