@@ -52,6 +52,16 @@ jobs:
           COUNT=$(printf '%s\n' "$OUT" | grep -c 'error TS' || true)
           echo "tsc exit=$TSC_EC error_count=$COUNT baseline=$TSC_ERROR_BASELINE"
           printf '%s\n' "$OUT"
+          # Crash / failed start: non-zero exit with no diagnostics must not pass the gate.
+          # tsc uses 0 (ok) / 1 (type errors) / 2 (config/usage); anything higher is abnormal.
+          if [ "$TSC_EC" -gt 2 ]; then
+            echo "::error::tsc exited $TSC_EC (>2); treating as crash/abnormal failure."
+            exit 1
+          fi
+          if [ "$TSC_EC" -ne 0 ] && [ "$COUNT" -eq 0 ]; then
+            echo "::error::tsc exited $TSC_EC with 0 error TS lines (crash or failed to start)."
+            exit 1
+          fi
           if [ "$COUNT" -gt "$TSC_ERROR_BASELINE" ]; then
             echo "::error::tsc error count $COUNT exceeds baseline $TSC_ERROR_BASELINE (new type debt)."
             exit 1
