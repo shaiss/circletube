@@ -76,7 +76,7 @@ export class MockStorage implements IStorage {
     this.seedDefaults();
   }
 
-  /** Reset to empty, then re-seed default fixtures */
+  /** Empty all in-memory stores (does not re-seed default fixtures) */
   reset(): void {
     this.users = [];
     this.posts = [];
@@ -439,7 +439,12 @@ export class MockStorage implements IStorage {
   async getDefaultCircle(userId: number): Promise<Circle> {
     const existing = this.circles.find((circle) => circle.userId === userId && circle.isDefault);
     if (existing) return existing;
-    return this.createCircle(userId, { name: 'Default Circle', visibility: 'private' });
+    const created = await this.createCircle(userId, {
+      name: 'Default Circle',
+      visibility: 'private',
+    });
+    created.isDefault = true;
+    return created;
   }
 
   async setDefaultCircle(userId: number, circleId: number): Promise<Circle> {
@@ -589,7 +594,7 @@ export class MockStorage implements IStorage {
 
   async getCircleMembers(
     circleId: number,
-    status: 'active' | 'deactivated' | 'all'
+    status: 'active' | 'deactivated' | 'all' = 'active'
   ): Promise<CircleMember[]> {
     return this.circleMembers.filter((member) => {
       if (member.circleId !== circleId) return false;
@@ -599,14 +604,14 @@ export class MockStorage implements IStorage {
   }
 
   async createCircleInvitation(
-    invitation: Omit<InsertCircleInvitation, 'status'>
+    invitation: Omit<InsertCircleInvitation, 'status'> & { inviterId: number }
   ): Promise<CircleInvitation> {
     const newInvitation: CircleInvitation = {
       id: this.nextId(this.circleInvitations),
       circleId: invitation.circleId,
       inviteeId: invitation.inviteeId,
       role: invitation.role,
-      inviterId: 0,
+      inviterId: invitation.inviterId,
       status: 'pending',
       createdAt: new Date(),
       respondedAt: null,
