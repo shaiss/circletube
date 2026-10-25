@@ -4,6 +4,7 @@ import type { Duplex } from 'stream';
 import type { Express, Request, Response } from 'express';
 import { storage } from './storage';
 import { getSessionMiddleware } from './auth';
+import { getSession } from './sessionStore';
 
 // WebSocket client connections
 interface ExtendedWebSocket extends WebSocket {
@@ -28,14 +29,6 @@ interface UpgradeAuth {
   sessionID?: string;
 }
 
-/**
- * Build the trusted Origin allowlist for `/ws` upgrades.
- * Env names only (no secret values):
- * - WS_ALLOWED_ORIGINS: comma-separated full origins (e.g. https://app.example.com)
- * - APP_ORIGIN / PUBLIC_APP_URL: optional single-origin fallbacks if set
- * In non-production, typical local Vite/dev origins are always included too.
- * In production, the list must come from those env vars; an empty list rejects all.
- */
 function getAllowedOrigins(): Set<string> {
   const origins = new Set<string>();
 
@@ -61,10 +54,6 @@ function getAllowedOrigins(): Set<string> {
   return origins;
 }
 
-/**
- * Browsers always send Origin on WebSocket upgrades. Missing Origin is
- * rejected in every environment (non-browser clients must not skip the check).
- */
 function isTrustedOrigin(origin: string | undefined): boolean {
   if (!origin) {
     return false;
@@ -73,19 +62,11 @@ function isTrustedOrigin(origin: string | undefined): boolean {
   return getAllowedOrigins().has(normalized);
 }
 
-/**
- * Authenticate a `/ws` upgrade with the same express-session cookie, store,
- * and secret as the HTTP API (server/auth.ts + server/sessionStore.ts).
- * Resolves the passport-serialized user id, or null when the request has no
- * logged-in session. Never trusts client-supplied tokens.
- */
 function authenticateUpgrade(request: IncomingMessage): Promise<UpgradeAuth | null> {
   const sessionMiddleware = getSessionMiddleware();
   const req = request as Request;
 
   return new Promise((resolve, reject) => {
-    // express-session only needs req; a stub res is fine because the upgrade
-    // never writes an HTTP response through Express (saveUninitialized: false).
     sessionMiddleware(req, {} as Response, async (err?: unknown) => {
       if (err) {
         reject(err);
@@ -101,7 +82,6 @@ function authenticateUpgrade(request: IncomingMessage): Promise<UpgradeAuth | nu
           return;
         }
 
-        // Mirror passport.deserializeUser: the session must point at a real user.
         const user = await storage.getUser(userId);
         if (!user) {
           resolve(null);
@@ -127,31 +107,22 @@ function onUpgradeSocketError(error: Error) {
   console.error('[WebSocket] Socket error during upgrade:', error);
 }
 
-/**
- * Initialize WebSocket server
- * @param server HTTP server instance
- * @param app Express app instance
- */
 export function initializeWebSocketServer(server: Server, app: Express) {
   console.log('[WebSocket] Initializing WebSocket server');
   
-  // Create WebSocket server attached to the HTTP server
   const wss = new WebSocketServer({ 
     noServer: true,
     path: '/ws',
   });
 
-  // Handle HTTP server upgrade event to establish WebSocket connection
   server.on('upgrade', (request, socket, head) => {
     console.log('[WebSocket] Received upgrade request for path:', request.url);
     
-    // Parse the URL to handle just the path portion, ignoring query params
     const requestUrl = new URL(
       request.url || '', 
       `http://${request.headers.host}`
     );
     
-    // Only handle WebSocket upgrade requests for /ws path
     if (requestUrl.pathname === '/ws') {
       console.log('[WebSocket] Processing WebSocket upgrade for /ws path');
       socket.on('error', onUpgradeSocketError);
@@ -186,13 +157,11 @@ export function initializeWebSocketServer(server: Server, app: Express) {
           rejectUpgrade(socket, 500, 'Internal Server Error');
         });
     } else {
-      // Not a WebSocket upgrade request for our path
       console.log('[WebSocket] Ignoring non-WebSocket path:', requestUrl.pathname);
       socket.destroy();
     }
   });
 
-  // Handle new WebSocket connections
   wss.on('connection', (ws: WebSocket) => {
     console.log('[WebSocket] New connection established');
     
@@ -200,34 +169,27 @@ export function initializeWebSocketServer(server: Server, app: Express) {
     extWs.isAlive = true;
     clients.add(extWs);
 
-    // Send initial welcome message
     ws.send(JSON.stringify({
       type: 'server-info',
       message: 'WebSocket connection established',
       timestamp: new Date().toISOString()
     }));
 
-    // Handle incoming messages
     ws.on('message', async (message) => {
       try {
         const data = JSON.parse(message.toString());
         console.log('[WebSocket] Received message:', data.type);
 
-        // Handle ping messages
         if (data.type === 'ping') {
           ws.send(JSON.stringify({ type: 'pong', timestamp: new Date().toISOString() }));
           return;
         }
 
-        // Legacy in-band authenticate: the socket is already authenticated by
-        // the session cookie at upgrade time, so just confirm. Client tokens
-        // are ignored (no unsigned or JWT token path).
         if (data.type === 'authenticate') {
           handleAuthentication(extWs);
           return;
         }
 
-        // Handle other message types (requires authentication)
         if (!extWs.userId) {
           ws.send(JSON.stringify({
             type: 'error',
@@ -236,9 +198,6 @@ export function initializeWebSocketServer(server: Server, app: Express) {
           }));
           return;
         }
-
-        // Process other message types as needed
-        // ...
 
       } catch (error) {
         console.error('[WebSocket] Error processing message:', error);
@@ -249,25 +208,21 @@ export function initializeWebSocketServer(server: Server, app: Express) {
       }
     });
 
-    // Handle WebSocket connection close
     ws.on('close', () => {
       console.log('[WebSocket] Connection closed');
       clients.delete(extWs);
     });
 
-    // Handle errors
     ws.on('error', (error) => {
       console.error('[WebSocket] Connection error:', error);
       clients.delete(extWs);
     });
 
-    // Setup ping/pong for connection health checks
     extWs.on('pong', () => {
       extWs.isAlive = true;
     });
   });
 
-  // Setup interval for ping/pong health checks
   const interval = setInterval(() => {
     wss.clients.forEach((ws) => {
       const extWs = ws as ExtendedWebSocket;
@@ -282,9 +237,8 @@ export function initializeWebSocketServer(server: Server, app: Express) {
       extWs.isAlive = false;
       extWs.ping();
     });
-  }, 30000); // Check every 30 seconds
+  }, 30000);
 
-  // Clean up interval on server close
   wss.on('close', () => {
     clearInterval(interval);
   });
@@ -293,10 +247,6 @@ export function initializeWebSocketServer(server: Server, app: Express) {
   return wss;
 }
 
-/**
- * Reply to a legacy in-band `authenticate` message. Authentication happens at
- * upgrade time from the session cookie; this never changes ws.userId.
- */
 function handleAuthentication(ws: ExtendedWebSocket) {
   if (!ws.userId) {
     ws.send(JSON.stringify({
@@ -314,10 +264,6 @@ function handleAuthentication(ws: ExtendedWebSocket) {
   }));
 }
 
-/**
- * Close every open `/ws` socket tied to a sessionID (e.g. after logout
- * destroys the session). Client-only close on one tab is not enough.
- */
 export function closeWebSocketsForSession(sessionID: string) {
   if (!sessionID) {
     return;
@@ -350,29 +296,104 @@ export function closeWebSocketsForSession(sessionID: string) {
   }
 }
 
+type SessionValidity = 'valid' | 'invalid' | 'unknown';
+
+async function isSessionStillValid(sessionID: string | undefined): Promise<SessionValidity> {
+  if (!sessionID) {
+    return 'invalid';
+  }
+
+  try {
+    const sess = await getSession(sessionID);
+    if (!sess) {
+      return 'invalid';
+    }
+    const passportData = (sess as { passport?: { user?: unknown } }).passport;
+    const userId = Number(passportData?.user);
+    return Number.isInteger(userId) && userId > 0 ? 'valid' : 'invalid';
+  } catch {
+    // Store/transient errors must not be treated as expiry: client ignores close
+    // code 1000 and would stop reconnecting until a full page reload.
+    console.warn(
+      '[WebSocket] Session store lookup failed during revalidation; treating as unknown',
+    );
+    return 'unknown';
+  }
+}
+
 /**
  * Broadcast a message to all authenticated clients, or only to specific users
  * when userIds is provided. Unauthenticated sockets never receive broadcasts.
+ * Revalidates each socket's sessionID against the store before send so idle
+ * expiry (no logout) stops delivery and closes those sockets (#16).
  */
-export function broadcastWebSocketMessage(message: any, userIds?: number[]) {
-  const serializedMessage = JSON.stringify(message);
-  
-  // Using forEach instead of for...of to avoid iteration issues
-  clients.forEach(client => {
-    // Never deliver to unauthenticated sockets (upgrade auth should prevent
-    // them; this is defense in depth)
-    if (!client.userId) {
-      return;
+export async function broadcastWebSocketMessage(message: any, userIds?: number[]) {
+  let serializedMessage: string;
+  try {
+    serializedMessage = JSON.stringify(message);
+  } catch (error) {
+    console.error('[WebSocket] Failed to serialize broadcast message:', error);
+    return;
+  }
+
+  const expiredSessions = new Set<string>();
+  const targets = Array.from(clients).filter(
+    (client) => !!client.userId && (!userIds || userIds.includes(client.userId)),
+  );
+
+  // Resolve each distinct session once, concurrently, so one slow store lookup
+  // does not serialize delivery to every other client.
+  const uniqueSessionIds = Array.from(
+    new Set(targets.map((client) => client.sessionID).filter((sid): sid is string => !!sid)),
+  );
+  const validityResults = await Promise.all(uniqueSessionIds.map((sid) => isSessionStillValid(sid)));
+  const sessionValidity = new Map<string, SessionValidity>();
+  uniqueSessionIds.forEach((sid, i) => sessionValidity.set(sid, validityResults[i]));
+
+  for (const client of targets) {
+    const sid = client.sessionID;
+    const validity: SessionValidity | undefined = sid ? sessionValidity.get(sid) : undefined;
+
+    if (validity === 'valid') {
+      if (client.readyState === WebSocket.OPEN) {
+        try {
+          client.send(serializedMessage);
+        } catch (error) {
+          console.error(`[WebSocket] Failed to send to user ${client.userId}:`, error);
+        }
+      }
+      continue;
     }
-    
-    // Send only to specific users if userIds is provided
-    if (userIds && !userIds.includes(client.userId)) {
-      return;
+
+    // Transient store failure: skip this delivery, keep the socket open.
+    if (validity === 'unknown') {
+      continue;
     }
-    
-    // Send the message if client is connected
-    if (client.readyState === WebSocket.OPEN) {
-      client.send(serializedMessage);
+
+    // Confirmed invalid, or missing session id on the socket.
+    if (sid) {
+      expiredSessions.add(sid);
+    } else {
+      console.log(`[WebSocket] Closing socket with no session (user ${client.userId})`);
+      try {
+        if (client.readyState === WebSocket.OPEN || client.readyState === WebSocket.CONNECTING) {
+          client.close(1000, 'Session ended');
+        } else {
+          client.terminate();
+        }
+      } catch (error) {
+        console.error('[WebSocket] Error closing socket without session:', error);
+        try {
+          client.terminate();
+        } catch {
+          // ignore
+        }
+      }
+      clients.delete(client);
     }
-  });
+  }
+
+  for (const sid of Array.from(expiredSessions)) {
+    closeWebSocketsForSession(sid);
+  }
 }
