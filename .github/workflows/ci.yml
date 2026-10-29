@@ -1,0 +1,99 @@
+# Minimal CI: tsc (baseline-gated), build, jest.
+# Pending Cipher review and Shai's yes before merge.
+name: ci
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+# Least privilege: read checkout only. No contents:write, no id-token, no secrets.
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        # actions/checkout@v7.0.1 — pin full commit SHA (immutable)
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Setup Node
+        # actions/setup-node@v7.1.0 — pin full commit SHA (immutable)
+        # Node 20: matches @types/node 20.x on main (no engines / .nvmrc)
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: "20"
+
+      - name: Install
+        # npm ci only; no cache action (avoids writing caches outside the job)
+        run: npm ci
+
+      - name: Typecheck (baseline-gated)
+        env:
+          # Measured on main (0cad079): 176 error TS diagnostics.
+          # Lower this number (never raise without review) as #18 tsc-debt slices land.
+          TSC_ERROR_BASELINE: "176"
+        run: |
+          set -uo pipefail
+          set +e
+          OUT=$(npx tsc --noEmit --incremental false 2>&1)
+          TSC_EC=$?
+          set -e
+          COUNT=$(printf '%s\n' "$OUT" | grep -c 'error TS' || true)
+          echo "tsc exit=$TSC_EC error_count=$COUNT baseline=$TSC_ERROR_BASELINE"
+          printf '%s\n' "$OUT"
+          # Crash / failed start: non-zero exit with no diagnostics must not pass the gate.
+          # tsc uses 0 (ok) / 1 (type errors) / 2 (config/usage); anything higher is abnormal.
+          if [ "$TSC_EC" -gt 2 ]; then
+            echo "::error::tsc exited $TSC_EC (>2); treating as crash/abnormal failure."
+            exit 1
+          fi
+          if [ "$TSC_EC" -ne 0 ] && [ "$COUNT" -eq 0 ]; then
+            echo "::error::tsc exited $TSC_EC with 0 error TS lines (crash or failed to start)."
+            exit 1
+          fi
+          if [ "$COUNT" -gt "$TSC_ERROR_BASELINE" ]; then
+            echo "::error::tsc error count $COUNT exceeds baseline $TSC_ERROR_BASELINE (new type debt)."
+            exit 1
+          fi
+          echo "tsc within baseline ($COUNT <= $TSC_ERROR_BASELINE)."
+          echo "To ratchet down: re-count with the same command on a clean main, then lower TSC_ERROR_BASELINE in this workflow."
+
+      - name: Build
+        run: npm run build
+
+      - name: Jest
+        run: |
+          set -euo pipefail
+          UNIT_CFG="server/test/unit/jest.unit.config.cjs"
+          if [ -f "$UNIT_CFG" ]; then
+            echo "Using $UNIT_CFG (blocking)."
+            npx jest --config "$UNIT_CFG" --forceExit
+            exit 0
+          fi
+
+          echo "::notice title=Jest::No $UNIT_CFG on this ref. Running repo jest with a documented legacy allowlist."
+          # Known-failing / historical suites (ESM+TS transform debt, archived copies).
+          # Failures matching this pattern are non-blocking. Do not expand silently —
+          # new suites outside this list must pass (do not hide real failures).
+          LEGACY_REGEX='(archive/|\.archive-|server/test/(openai|routes)\.test\.|server/test/integration/|server/test/simplified/|server/test/schemas/)'
+
+          echo "=== Blocking jest (non-legacy) ==="
+          npx jest --forceExit --testPathIgnorePatterns="$LEGACY_REGEX"
+
+          echo "=== Legacy jest (non-blocking; known-failing) ==="
+          set +e
+          npx jest --forceExit --testPathPattern="$LEGACY_REGEX"
+          LEGACY_EC=$?
+          set -e
+          echo "Legacy suites exited $LEGACY_EC (non-blocking). Documented allowlist above; real failures outside it still fail the job."
