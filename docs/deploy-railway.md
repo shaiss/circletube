@@ -7,6 +7,12 @@ project yet**. BRIEF.md’s open question — which project/URL is canonical —
 stays open until a human creates the service. Do not treat any URL as
 production until that happens.
 
+> **Scope note:** this guide describes the Railway setup once both #9
+> (`railway.toml`, `nixpacks.toml`, `PORT` handling in `server/index.ts`,
+> this guide) and #13 (Postgres-backed production sessions via
+> `connect-pg-simple`) are on `main`. If only one of them has merged, the
+> items that belong to the other do not apply yet.
+
 ## Create a service from this repo
 
 1. In Railway, create a **new project** and a **new service** from GitHub
@@ -20,7 +26,10 @@ production until that happens.
    - **Health check path:** `/api/health`
    - **Restart policy:** On failure (`ON_FAILURE`, same as `railway.toml`
      `[deploy].restartPolicyType`)
-   `package.json` `engines.node` is `>=20`; Railpack resolves Node LTS.
+   Set `RAILPACK_NODE_VERSION=22` on the service (same major as the Nixpacks
+     fallback). `package.json` `engines.node` is only a `>=20` compatibility
+     range; Railpack reduces a range like that to major `20`, not the default
+     `lts` channel.
 3. If an operator later selects **Nixpacks** in the dashboard, `nixpacks.toml`
    applies (Node 22, the same build, and the same start command). Prefer Railpack.
 4. Do **not** add a Dockerfile unless Railpack/Nixpacks cannot build.
@@ -85,7 +94,7 @@ Fail-fast (unchanged from #11 / #12):
 - Missing `DATABASE_URL` in production throws when creating the Postgres
   session store (and earlier from `server/db.ts` for app data).
 
-Runtime wiring lives in `server/sessionStore.ts` (see also draft PR #13 /
+Runtime wiring lives in `server/sessionStore.ts` (Postgres sessions: PR #13 /
 issue #12). This guide documents the operator-facing behavior so the B1
 scaffold and the durable-session change stay consistent.
 
