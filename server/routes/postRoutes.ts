@@ -4,6 +4,7 @@ import { requireAuth, hasCirclePermission } from './middleware';
 import { ResponseScheduler } from '../response-scheduler';
 import { ThreadContextManager } from '../context-manager';
 import { ThreadManager } from '../thread-manager';
+import { sanitizeUser } from '../sanitizeUser';
 
 const router = Router();
 const contextManager = ThreadContextManager.getInstance(); 
@@ -40,6 +41,8 @@ router.post('/test-pending-response', async (req, res) => {
       postId,
       aiFollowerId: followerId,
       scheduledFor: scheduledTime,
+      processed: false,
+      metadata: null,
     });
     
     res.status(200).json({
@@ -79,7 +82,10 @@ router.get('/', requireAuth, async (req, res) => {
     }
     
     // Sort by created date, most recent first
-    allPosts.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    allPosts.sort((a, b) =>
+      (b.createdAt ? new Date(b.createdAt).getTime() : 0) -
+      (a.createdAt ? new Date(a.createdAt).getTime() : 0)
+    );
     
     res.json(allPosts);
   } catch (error) {
@@ -105,6 +111,9 @@ router.get('/:id', requireAuth, async (req, res) => {
     }
     
     // Check if the user has access to the circle this post belongs to
+    if (post.circleId == null) {
+      return res.status(403).json({ message: "Access denied" });
+    }
     const hasPermission = await hasCirclePermission(post.circleId, req.user!.id, storage);
     if (!hasPermission) {
       return res.status(403).json({ message: "Access denied" });
@@ -116,19 +125,21 @@ router.get('/:id', requireAuth, async (req, res) => {
     // Get user info for each interaction
     const interactionsWithUsers = await Promise.all(
       interactions.map(async (interaction) => {
-        if (interaction.userType === "ai") {
-          const follower = await storage.getAiFollower(interaction.authorId);
+        if (interaction.aiFollowerId != null) {
+          const follower = await storage.getAiFollower(interaction.aiFollowerId);
           return {
             ...interaction,
             author: follower,
             aiFollower: follower // Add aiFollower property for Comment component compatibility
           };
-        } else {
-          const user = await storage.getUser(interaction.authorId);
+        } else if (interaction.userId != null) {
+          const user = await storage.getUser(interaction.userId);
           return {
             ...interaction,
-            author: user
+            author: sanitizeUser(user)
           };
+        } else {
+          return { ...interaction, author: undefined };
         }
       })
     );
@@ -340,19 +351,21 @@ router.get('/circle/:circleId', requireAuth, async (req, res) => {
         // Get user info for each interaction
         const interactionsWithUsers = await Promise.all(
           interactions.map(async (interaction) => {
-            if (interaction.userType === "ai") {
-              const follower = await storage.getAiFollower(interaction.authorId);
+            if (interaction.aiFollowerId != null) {
+              const follower = await storage.getAiFollower(interaction.aiFollowerId);
               return {
                 ...interaction,
                 author: follower,
                 aiFollower: follower // Add aiFollower property for Comment component compatibility
               };
-            } else {
-              const user = await storage.getUser(interaction.authorId);
+            } else if (interaction.userId != null) {
+              const user = await storage.getUser(interaction.userId);
               return {
                 ...interaction,
-                author: user
+                author: sanitizeUser(user)
               };
+            } else {
+              return { ...interaction, author: undefined };
             }
           })
         );
@@ -442,7 +455,10 @@ router.get('/user/:userId', requireAuth, async (req, res) => {
     }
     
     // Sort by created date, most recent first
-    allPosts.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    allPosts.sort((a, b) =>
+      (b.createdAt ? new Date(b.createdAt).getTime() : 0) -
+      (a.createdAt ? new Date(a.createdAt).getTime() : 0)
+    );
     
     // Optionally include interactions
     if (includeInteractions) {
@@ -453,19 +469,21 @@ router.get('/user/:userId', requireAuth, async (req, res) => {
           // Get user info for each interaction
           const interactionsWithUsers = await Promise.all(
             interactions.map(async (interaction) => {
-              if (interaction.userType === "ai") {
-                const follower = await storage.getAiFollower(interaction.authorId);
+              if (interaction.aiFollowerId != null) {
+                const follower = await storage.getAiFollower(interaction.aiFollowerId);
                 return {
                   ...interaction,
                   author: follower,
                   aiFollower: follower // Add aiFollower property for Comment component compatibility
                 };
-              } else {
-                const user = await storage.getUser(interaction.authorId);
+              } else if (interaction.userId != null) {
+                const user = await storage.getUser(interaction.userId);
                 return {
                   ...interaction,
-                  author: user
+                  author: sanitizeUser(user)
                 };
+              } else {
+                return { ...interaction, author: undefined };
               }
             })
           );
@@ -568,6 +586,9 @@ router.post('/:postId/reply', requireAuth, async (req, res) => {
     }
     
     // Check if user has access to the circle
+    if (post.circleId == null) {
+      return res.status(403).json({ message: "Access denied" });
+    }
     const hasPermission = await hasCirclePermission(post.circleId, req.user!.id, storage);
     if (!hasPermission) {
       return res.status(403).json({ message: "Access denied" });
@@ -580,16 +601,17 @@ router.post('/:postId/reply', requireAuth, async (req, res) => {
       aiFollowerId: null,
       content,
       type: "comment",
-      parentId: parentInteractionId || null
+      parentId: parentInteractionId || null,
+      toolsUsed: null,
     });
     
-    // Get user info
+    // Get user info (public projection — never return password hashes)
     const user = await storage.getUser(req.user!.id);
     
     // Return the interaction with user info
     const interactionWithUser = {
       ...interaction,
-      author: user
+      author: sanitizeUser(user)
     };
     
     res.status(201).json(interactionWithUser);

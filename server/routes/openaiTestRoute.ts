@@ -1,7 +1,10 @@
 import express from "express";
+import type OpenAI from "openai";
 import { openai } from "../openai";
 
 const router = express.Router();
+
+type ChatCompletion = OpenAI.Chat.Completions.ChatCompletion;
 
 /**
  * Test endpoint to verify OpenAI connectivity with minimal parameters
@@ -39,7 +42,10 @@ router.get("/test-openai", async (req, res) => {
       
       // Race the API request against the timeout
       console.log("[OpenAI-Test] Awaiting response or timeout");
-      const completion = await Promise.race([apiRequestPromise, timeoutPromise]);
+      const completion = await Promise.race([
+        apiRequestPromise,
+        timeoutPromise,
+      ]) as ChatCompletion;
       
       const duration = Date.now() - startTime;
       console.log(`[OpenAI-Test] Request completed in ${duration}ms`);
@@ -48,7 +54,7 @@ router.get("/test-openai", async (req, res) => {
       const minimizedResponse = {
         id: completion.id,
         model: completion.model,
-        choices: completion.choices?.map(c => ({ content: c.message.content })),
+        choices: completion.choices?.map((c) => ({ content: c.message.content })),
         duration_ms: duration
       };
       
