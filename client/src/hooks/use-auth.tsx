@@ -10,7 +10,6 @@ import { useToast } from "@/hooks/use-toast";
 
 type AuthContextType = {
   user: SelectUser | null;
-  token: string | null;
   isLoading: boolean;
   error: Error | null;
   loginMutation: UseMutationResult<any, Error, LoginData>;
@@ -33,13 +32,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     queryFn: getQueryFn({ on401: "returnNull" }),
   });
   
-  // Get token from cookie or localStorage
-  const getAuthToken = () => {
-    // In a real app, you would extract the token from cookies or localStorage
-    // For now, we'll just return a dummy token if the user is authenticated
-    return user ? "auth-token-for-user-" + user.id : null;
-  };
-
   const loginMutation = useMutation({
     mutationFn: async (credentials: LoginData) => {
       const res = await apiRequest("/api/login", "POST", credentials);
@@ -102,14 +94,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     },
   });
 
-  // Get the auth token
-  const token = getAuthToken();
-  
+  // WebSocket (/ws) auth uses the same httpOnly session cookie as /api/*;
+  // there is no client-side auth token (see server/websocket.ts, #14).
   return (
     <AuthContext.Provider
       value={{
         user: user ?? null,
-        token,
         isLoading,
         error,
         loginMutation,
