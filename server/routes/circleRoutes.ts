@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { storage } from '../storage';
 import { requireAuth, hasCirclePermission } from './middleware';
 import { ThreadManager } from '../thread-manager';
+import { sanitizeUser } from '../sanitizeUser';
 
 const router = Router();
 
@@ -304,8 +305,11 @@ router.get('/:id/details', requireAuth, async (req, res) => {
       return res.status(404).json({ message: "Circle not found" });
     }
 
-    // The getCircleWithDetails already returns the correct structure
-    res.json(details);
+    // Strip password (and any other secrets) from the owner user row
+    res.json({
+      ...details,
+      owner: sanitizeUser(details.owner),
+    });
   } catch (error) {
     console.error("Error getting circle details:", error);
     res.status(500).json({ message: "Failed to get circle details" });
@@ -422,7 +426,7 @@ router.get('/:id/posts', requireAuth, async (req, res) => {
               const user = await storage.getUser(interaction.userId);
               return {
                 ...interaction,
-                author: user,
+                author: sanitizeUser(user),
                 userType: "human", // Add this for frontend compatibility
                 authorId: interaction.userId // Add this for frontend compatibility
               };

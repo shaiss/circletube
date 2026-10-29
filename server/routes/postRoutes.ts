@@ -4,6 +4,7 @@ import { requireAuth, hasCirclePermission } from './middleware';
 import { ResponseScheduler } from '../response-scheduler';
 import { ThreadContextManager } from '../context-manager';
 import { ThreadManager } from '../thread-manager';
+import { sanitizeUser } from '../sanitizeUser';
 
 const router = Router();
 const contextManager = ThreadContextManager.getInstance(); 
@@ -135,7 +136,7 @@ router.get('/:id', requireAuth, async (req, res) => {
           const user = await storage.getUser(interaction.userId);
           return {
             ...interaction,
-            author: user
+            author: sanitizeUser(user)
           };
         } else {
           return { ...interaction, author: undefined };
@@ -361,7 +362,7 @@ router.get('/circle/:circleId', requireAuth, async (req, res) => {
               const user = await storage.getUser(interaction.userId);
               return {
                 ...interaction,
-                author: user
+                author: sanitizeUser(user)
               };
             } else {
               return { ...interaction, author: undefined };
@@ -479,7 +480,7 @@ router.get('/user/:userId', requireAuth, async (req, res) => {
                 const user = await storage.getUser(interaction.userId);
                 return {
                   ...interaction,
-                  author: user
+                  author: sanitizeUser(user)
                 };
               } else {
                 return { ...interaction, author: undefined };
@@ -604,13 +605,13 @@ router.post('/:postId/reply', requireAuth, async (req, res) => {
       toolsUsed: null,
     });
     
-    // Get user info
+    // Get user info (public projection — never return password hashes)
     const user = await storage.getUser(req.user!.id);
     
     // Return the interaction with user info
     const interactionWithUser = {
       ...interaction,
-      author: user
+      author: sanitizeUser(user)
     };
     
     res.status(201).json(interactionWithUser);
