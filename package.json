@@ -4,6 +4,9 @@
   "description": "CircleTube — AI-powered social platform for creators",
   "type": "module",
   "license": "MIT",
+  "engines": {
+    "node": ">=20"
+  },
   "scripts": {
     "dev": "tsx server/index.ts",
     "build": "vite build && esbuild server/index.ts --platform=node --packages=external --bundle --format=esm --outdir=dist",
