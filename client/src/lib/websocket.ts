@@ -1,27 +1,15 @@
-import { useAuth } from "@/hooks/use-auth";
-
 // WebSocket connection
 let ws: WebSocket | null = null;
 let reconnectAttempts = 0;
 let reconnectTimeout: ReturnType<typeof setTimeout> | null = null;
 const MAX_RECONNECT_ATTEMPTS = 5;
-let authToken: string | null = null;
 
 // Map to store message type listeners
 const LISTENERS = new Map<string, Set<(data: any) => void>>();
 
-// Set the authentication token for WebSocket connections
-export function setWebSocketAuthToken(token: string | null) {
-  authToken = token;
-  
-  // If we have an active connection and the token changes, authenticate
-  if (ws && ws.readyState === WebSocket.OPEN && authToken) {
-    sendWebSocketMessage({
-      type: 'authenticate',
-      token: authToken
-    });
-  }
-}
+// Authentication: the browser sends the httpOnly session cookie with the
+// same-origin /ws upgrade, and the server authenticates the socket from that
+// session (see server/websocket.ts, #14). No client-side token is sent.
 
 function getWebSocketUrl(): string {
   try {
