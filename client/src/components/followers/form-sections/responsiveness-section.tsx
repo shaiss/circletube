@@ -28,8 +28,10 @@ export function ResponsivenessSection({ control, form }: ResponsivenessSectionPr
                   field.onChange(values);
                   // If there's at least one value selected, use the first one to set primary responsiveness
                   if (values.length > 0) {
-                    form.setValue('responsiveness', values[0]);
-                    const delay = getDefaultDelay(values[0]);
+                    // Selector only emits the known responsiveness option ids.
+                    const primary = values[0] as CollectiveFormValues['responsiveness'];
+                    form.setValue('responsiveness', primary);
+                    const delay = getDefaultDelay(primary);
                     form.setValue('responseDelayMin', delay.min);
                     form.setValue('responseDelayMax', delay.max);
                   }

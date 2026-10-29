@@ -20,7 +20,7 @@ export const userResponseSchema = baseResponseSchema.extend({
   avatarUrl: z.string().nullable(),
   bio: z.string().nullable(),
   createdAt: z.string().or(z.date()).nullable()
-}).omit({ password: true });
+});
 
 /**
  * Post response schema

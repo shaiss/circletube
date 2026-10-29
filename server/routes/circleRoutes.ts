@@ -153,6 +153,7 @@ router.post('/:id/invitations', requireAuth, async (req, res) => {
     // Create invitation
     const invitation = await storage.createCircleInvitation({
       circleId,
+      inviterId: req.user!.id,
       inviteeId: invitee.id,
       role
     });
