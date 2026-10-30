@@ -5,7 +5,7 @@ import session from "express-session";
 import { scrypt, randomBytes, timingSafeEqual } from "crypto";
 import { promisify } from "util";
 import { storage } from "./storage";
-import { User as SelectUser } from "@shared/schema";
+import { User as SelectUser, registerUserSchema } from "@shared/schema";
 import { sessionStore } from "./sessionStore";
 import { resolveSessionSecret } from "./sessionSecret";
 
@@ -98,19 +98,31 @@ export async function setupAuth(app: Express) {
 
   app.post("/api/register", async (req, res, next) => {
     try {
-      const existingUser = await storage.getUserByUsername(req.body.username);
+      const parsed = registerUserSchema.safeParse(req.body);
+      if (!parsed.success) {
+        return res.status(400).json({ message: "Invalid registration data" });
+      }
+
+      const { username, password, avatarUrl, bio } = parsed.data;
+
+      const existingUser = await storage.getUserByUsername(username);
       if (existingUser) {
         return res.status(400).json({ message: "Username already exists" });
       }
 
       const user = await storage.createUser({
-        ...req.body,
-        password: await hashPassword(req.body.password),
+        username,
+        password: await hashPassword(password),
+        ...(avatarUrl !== undefined ? { avatarUrl } : {}),
+        ...(bio !== undefined ? { bio } : {}),
       });
+
+      // Omit hash from JSON; full sanitizeUser across auth routes is tracked in #35.
+      const { password: _passwordHash, ...safeUser } = user;
 
       req.login(user, (err) => {
         if (err) return next(err);
-        res.status(201).json(user);
+        res.status(201).json(safeUser);
       });
     } catch (error) {
       next(error);

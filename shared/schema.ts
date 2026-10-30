@@ -252,10 +252,29 @@ export const circleInvitationsRelations = relations(circleInvitations, ({ one })
   }),
 }));
 
+/** Shared login/credentials shape — matches main (username + password, no length caps). */
 export const insertUserSchema = createInsertSchema(users).pick({
   username: true,
   password: true,
 });
+
+/**
+ * Strict body schema for POST /api/register only.
+ * Allowlists username/password/avatarUrl/bio, enforces length limits, rejects unknown keys.
+ * Kept separate from insertUserSchema so login UI is not capped.
+ */
+export const registerUserSchema = createInsertSchema(users)
+  .pick({
+    username: true,
+    password: true,
+    avatarUrl: true,
+    bio: true,
+  })
+  .extend({
+    username: z.string().min(1).max(64),
+    password: z.string().min(1).max(128),
+  })
+  .strict();
 
 export const insertPostSchema = createInsertSchema(posts)
   .pick({
@@ -358,6 +377,7 @@ export type Notification = typeof notifications.$inferSelect;
 export type InsertNotification = z.infer<typeof insertNotificationSchema>;
 
 export type InsertUser = z.infer<typeof insertUserSchema>;
+export type RegisterUser = z.infer<typeof registerUserSchema>;
 export type User = typeof users.$inferSelect;
 export type Post = typeof posts.$inferSelect;
 export type AiFollower = typeof ai_followers.$inferSelect;

@@ -21,7 +21,7 @@ import { sql } from 'drizzle-orm/sql';
 export interface IStorage {
   getUser(id: number): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
-  createUser(user: InsertUser): Promise<User>;
+  createUser(user: InsertUser & Partial<Pick<User, "avatarUrl" | "bio">>): Promise<User>;
   updateUser(id: number, updates: Partial<Pick<User, "avatarUrl" | "bio">>): Promise<User>;
   createPost(userId: number, content: string): Promise<Post>;
   getPost(id: number): Promise<Post | undefined>;
@@ -187,7 +187,7 @@ export class DatabaseStorage implements IStorage {
     return user;
   }
 
-  async createUser(insertUser: InsertUser): Promise<User> {
+  async createUser(insertUser: InsertUser & Partial<Pick<User, "avatarUrl" | "bio">>): Promise<User> {
     const [user] = (await db.insert(users).values(insertUser).returning()) as User[];
     return user;
   }
