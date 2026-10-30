@@ -9,9 +9,15 @@ const router = Router();
 const contextManager = ThreadContextManager.getInstance(); 
 
 /**
- * POST /api/posts/test-pending-response - Test endpoint to create a pending response
+ * POST /api/posts/test-pending-response - Dev/test helper to create a pending response.
+ * Disabled in production. Requires auth and circle access (#36).
  */
-router.post('/test-pending-response', async (req, res) => {
+router.post('/test-pending-response', (req, res, next) => {
+  if (process.env.NODE_ENV === 'production') {
+    return res.status(404).json({ message: "Not found" });
+  }
+  return requireAuth(req, res, next);
+}, async (req, res) => {
   try {
     const { postId, followerId, delayMinutes = 5 } = req.body;
     
@@ -23,12 +29,25 @@ router.post('/test-pending-response', async (req, res) => {
     const post = await storage.getPost(postId);
     const follower = await storage.getAiFollower(followerId);
     
-    if (!post) {
+    if (!post || post.circleId == null) {
       return res.status(404).json({ message: "Post not found" });
     }
     
     if (!follower) {
       return res.status(404).json({ message: "AI follower not found" });
+    }
+
+    const circleId = post.circleId;
+    const hasPermission = await hasCirclePermission(circleId, req.user!.id, storage);
+    if (!hasPermission) {
+      return res.status(403).json({ message: "Access denied" });
+    }
+
+    const circleFollowers = await storage.getCircleFollowers(circleId);
+    const followerInCircle = circleFollowers.some((f) => f.id === followerId);
+    const followerOwnedByCaller = follower.userId === req.user!.id;
+    if (!followerOwnedByCaller && !followerInCircle) {
+      return res.status(403).json({ message: "Access denied" });
     }
     
     // Calculate scheduled time
