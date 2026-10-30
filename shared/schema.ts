@@ -252,10 +252,21 @@ export const circleInvitationsRelations = relations(circleInvitations, ({ one })
   }),
 }));
 
-export const insertUserSchema = createInsertSchema(users).pick({
-  username: true,
-  password: true,
-});
+/** Fields a client may set at registration (ids/timestamps are server-owned). */
+export const insertUserSchema = createInsertSchema(users)
+  .pick({
+    username: true,
+    password: true,
+    avatarUrl: true,
+    bio: true,
+  })
+  .extend({
+    username: z.string().min(1).max(64),
+    password: z.string().min(1).max(128),
+  });
+
+/** Strict body schema for POST /api/register — rejects unknown/privileged keys. */
+export const registerUserSchema = insertUserSchema.strict();
 
 export const insertPostSchema = createInsertSchema(posts)
   .pick({
