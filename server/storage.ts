@@ -1153,16 +1153,18 @@ export class DatabaseStorage implements IStorage {
     circleId: number,
     status: "active" | "deactivated" | "all" = "active"
   ): Promise<CircleMember[]> {
-    const query = db
-      .select()
-      .from(circleMembers)
-      .where(eq(circleMembers.circleId, circleId));
-
+    // Build a single where clause — Drizzle's where() replaces prior filters,
+    // so chaining a second where() would drop the circleId scope.
+    const conditions = [eq(circleMembers.circleId, circleId)];
     if (status !== "all") {
-      query.where(eq(circleMembers.status, status));
+      conditions.push(eq(circleMembers.status, status));
     }
 
-    return await query.orderBy(asc(circleMembers.joinedAt));
+    return await db
+      .select()
+      .from(circleMembers)
+      .where(and(...conditions))
+      .orderBy(asc(circleMembers.joinedAt));
   }
   
   async getCirclePostCount(circleId: number): Promise<number> {
