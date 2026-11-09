@@ -13,7 +13,7 @@ import {
   notifications, directChats, aiFollowerCollectives, aiFollowerCollectiveMembers,
   circleCollectives, labs, labCircles, labContent, labAnalysisResults
 } from "@shared/schema";
-import { eq, and, asc, or, desc, inArray } from "drizzle-orm";
+import { eq, and, asc, or, desc, inArray, getTableColumns } from "drizzle-orm";
 import { db } from "./db";
 import { defaultTomConfig } from "./config/default-ai-follower";
 import { sql } from 'drizzle-orm/sql';
@@ -98,8 +98,8 @@ export interface IStorage {
 
   addCircleMember(member: InsertCircleMember): Promise<CircleMember>;
   removeCircleMember(circleId: number, userId: number): Promise<void>;
-  getCircleMembers(circleId: number, status: "active" | "deactivated" | "all"): Promise<CircleMember[]>;
-  createCircleInvitation(invitation: Omit<InsertCircleInvitation, "status">): Promise<CircleInvitation>;
+  getCircleMembers(circleId: number, status?: "active" | "deactivated" | "all"): Promise<CircleMember[]>;
+  createCircleInvitation(invitation: InsertCircleInvitation): Promise<CircleInvitation>;
   getCircleInvitation(id: number): Promise<CircleInvitation | undefined>;
   getCircleInvitations(circleId: number): Promise<CircleInvitation[]>;
   getUserPendingInvitations(userId: number): Promise<CircleInvitation[]>;
@@ -145,7 +145,8 @@ export interface IStorage {
     role: "control" | "treatment" | "observation",
     memberCount: number,
     followerCount: number,
-    addedAt: Date
+    addedAt: Date | null,
+    circleId: number
   })[]>;
   getCircleLabs(circleId: number): Promise<(Lab & { role: "control" | "treatment" | "observation" })[]>;
   getLabsForCircle(circleId: number): Promise<Lab[]>; // Alias for getCircleLabs for API compatibility
@@ -924,9 +925,7 @@ export class DatabaseStorage implements IStorage {
       console.log("[Storage] Getting collectives for circle:", circleId);
       
       const collectives = await db
-        .select({
-          ...aiFollowerCollectives
-        })
+        .select(getTableColumns(aiFollowerCollectives))
         .from(circleCollectives)
         .innerJoin(
           aiFollowerCollectives,
@@ -936,7 +935,7 @@ export class DatabaseStorage implements IStorage {
       
       console.log("[Storage] Retrieved circle collectives count:", collectives.length);
       
-      return collectives as AiFollowerCollective[];
+      return collectives;
     } catch (error) {
       console.error("[Storage] Error getting circle collectives:", error);
       throw error;
@@ -1153,16 +1152,16 @@ export class DatabaseStorage implements IStorage {
     circleId: number,
     status: "active" | "deactivated" | "all" = "active"
   ): Promise<CircleMember[]> {
-    const query = db
-      .select()
-      .from(circleMembers)
-      .where(eq(circleMembers.circleId, circleId));
-
+    const conditions = [eq(circleMembers.circleId, circleId)];
     if (status !== "all") {
-      query.where(eq(circleMembers.status, status));
+      conditions.push(eq(circleMembers.status, status));
     }
 
-    return await query.orderBy(asc(circleMembers.joinedAt));
+    return await db
+      .select()
+      .from(circleMembers)
+      .where(and(...conditions))
+      .orderBy(asc(circleMembers.joinedAt));
   }
   
   async getCirclePostCount(circleId: number): Promise<number> {
@@ -1234,7 +1233,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createCircleInvitation(
-    invitation: Omit<InsertCircleInvitation, "status">
+    invitation: InsertCircleInvitation
   ): Promise<CircleInvitation> {
     const [circleInvitation] = (await db
       .insert(circleInvitations)
@@ -1323,6 +1322,7 @@ export class DatabaseStorage implements IStorage {
         circleId: circleMembers.circleId,
         userId: circleMembers.userId,
         role: circleMembers.role,
+        status: circleMembers.status,
         joinedAt: circleMembers.joinedAt,
         username: users.username,
       })
@@ -1339,6 +1339,7 @@ export class DatabaseStorage implements IStorage {
         circleId: id,
         userId: owner.id,
         role: "owner" as const,
+        status: "active" as const,
         joinedAt: circle.createdAt,
         username: owner.username,
       });
@@ -1396,9 +1397,10 @@ export class DatabaseStorage implements IStorage {
 
   // Implement notification methods
   async createNotification(notification: InsertNotification): Promise<Notification> {
+    // drizzle-zod widens json.$type metadata fields to unknown; cast back for insert
     const [newNotification] = (await db
       .insert(notifications)
-      .values(notification)
+      .values(notification as typeof notifications.$inferInsert)
       .returning()) as Notification[];
     return newNotification;
   }
@@ -1535,9 +1537,10 @@ export class DatabaseStorage implements IStorage {
         hasToolsUsed: !!message.toolsUsed
       });
 
+      // drizzle-zod widens nested json array shapes; cast back for insert
       const [chatMessage] = (await db
         .insert(directChats)
-        .values(message)
+        .values(message as typeof directChats.$inferInsert)
         .returning()) as DirectChat[];
 
       console.log("[Storage] Created direct chat message:", {
@@ -1694,7 +1697,7 @@ export class DatabaseStorage implements IStorage {
       
       const members = await db
         .select({
-          ...ai_followers,
+          ...getTableColumns(ai_followers),
           collectiveMemberId: aiFollowerCollectiveMembers.id
         })
         .from(aiFollowerCollectiveMembers)
@@ -1706,7 +1709,7 @@ export class DatabaseStorage implements IStorage {
       
       console.log("[Storage] Retrieved collective members count:", members.length);
       
-      return members as (AiFollower & { collectiveMemberId: number })[];
+      return members;
     } catch (error) {
       console.error("[Storage] Error getting collective members:", error);
       throw error;
@@ -1741,9 +1744,7 @@ export class DatabaseStorage implements IStorage {
       console.log("[Storage] Getting collectives for AI follower:", aiFollowerId);
       
       const collectives = await db
-        .select({
-          ...aiFollowerCollectives
-        })
+        .select(getTableColumns(aiFollowerCollectives))
         .from(aiFollowerCollectiveMembers)
         .innerJoin(
           aiFollowerCollectives,
@@ -1753,7 +1754,7 @@ export class DatabaseStorage implements IStorage {
       
       console.log("[Storage] Retrieved collectives count for follower:", collectives.length);
       
-      return collectives as AiFollowerCollective[];
+      return collectives;
     } catch (error) {
       console.error("[Storage] Error getting follower collectives:", error);
       throw error;
@@ -1770,13 +1771,11 @@ export class DatabaseStorage implements IStorage {
         userId: data.createdBy
       });
       
-      // Create the collective
+      // Create the collective (personality is NOT NULL in schema; empty string when unset)
       const collective = await this.createAiFollowerCollective(data.createdBy, {
         name: data.name,
         description: data.description || null,
-        personality: null,
-        userId: data.createdBy,
-        active: true
+        personality: "",
       });
       
       // Add followers if provided
@@ -1804,12 +1803,14 @@ export class DatabaseStorage implements IStorage {
         experimentType: lab.experimentType
       });
       
+      // drizzle-zod widens successMetrics json enums; cast back for insert
       const [newLab] = (await db
         .insert(labs)
         .values({ 
           ...lab, 
           userId,
-          updatedAt: new Date() 
+          updatedAt: new Date(),
+          successMetrics: lab.successMetrics as Lab["successMetrics"],
         })
         .returning()) as Lab[];
       
@@ -2123,10 +2124,11 @@ export class DatabaseStorage implements IStorage {
 
       const labCirclesData = await db
         .select({
-          ...circles,
+          ...getTableColumns(circles),
+          labId: labCircles.labId,
           role: labCircles.role,
           circleId: labCircles.circleId,
-          addedAt: labCircles.addedAt
+          addedAt: labCircles.addedAt,
         })
         .from(labCircles)
         .innerJoin(circles, eq(labCircles.circleId, circles.id))
@@ -2134,7 +2136,8 @@ export class DatabaseStorage implements IStorage {
 
       console.log("[Storage] Retrieved lab circles count:", labCirclesData.length);
 
-      return labCirclesData;
+      // Circle & LabCircle both have `id`; keep Circle.id (from getTableColumns) for callers
+      return labCirclesData as (Circle & LabCircle)[];
     } catch (error) {
       console.error("[Storage] Error getting lab circles:", error);
       throw error;
@@ -2145,7 +2148,7 @@ export class DatabaseStorage implements IStorage {
     role: "control" | "treatment" | "observation",
     memberCount: number,
     followerCount: number,
-    addedAt: Date,
+    addedAt: Date | null,
     circleId: number
   })[]> {
     try {
@@ -2154,10 +2157,10 @@ export class DatabaseStorage implements IStorage {
       // First get the basic circle info with roles
       const labCirclesData = await db
         .select({
-          ...circles,
+          ...getTableColumns(circles),
           role: labCircles.role,
           addedAt: labCircles.addedAt,
-          circleId: labCircles.circleId  // Explicitly include circleId
+          circleId: labCircles.circleId
         })
         .from(labCircles)
         .innerJoin(circles, eq(labCircles.circleId, circles.id))
@@ -2207,7 +2210,7 @@ export class DatabaseStorage implements IStorage {
       // Get labs where this circle is a member
       const circleLabs = await db
         .select({
-          ...labs,
+          ...getTableColumns(labs),
           role: labCircles.role
         })
         .from(labCircles)
@@ -2345,30 +2348,28 @@ export class DatabaseStorage implements IStorage {
     console.log(`[Storage] Getting lab posts for lab ${labId}${targetRole ? ` with target role ${targetRole}` : ''}`);
     
     try {
-      // Base query to get all lab experiment posts for this lab
-      let query = db
-        .select()
-        .from(posts)
-        .where(
-          and(
-            eq(posts.labId, labId),
-            eq(posts.labExperiment, true)
-          )
-        );
-      
+      const conditions = [
+        eq(posts.labId, labId),
+        eq(posts.labExperiment, true),
+      ];
+
       // If a specific target role is provided, filter by it
       if (targetRole && targetRole !== "all") {
         // For non-all targets, we need posts specifically for that role OR for "all" roles
-        query = query.where(
+        conditions.push(
           or(
             eq(posts.targetRole, targetRole),
             eq(posts.targetRole, "all")
-          )
+          )!
         );
       }
-      
+
       // Get the posts ordered by creation date (most recent first)
-      const labPosts = await query.orderBy(desc(posts.createdAt));
+      const labPosts = await db
+        .select()
+        .from(posts)
+        .where(and(...conditions))
+        .orderBy(desc(posts.createdAt));
       
       // Enrich the posts with interactions, pending responses, and circle information
       const enrichedPosts = await Promise.all(
@@ -2562,8 +2563,8 @@ export class DatabaseStorage implements IStorage {
       const [newContent] = (await db
         .insert(labContent)
         .values({
-          labId,
-          ...content
+          ...content,
+          labId, // prefer explicit arg over any labId on content
         })
         .returning()) as LabContent[];
       

@@ -329,6 +329,7 @@ export const insertCircleMemberSchema = createInsertSchema(circleMembers)
 export const insertCircleInvitationSchema = createInsertSchema(circleInvitations)
   .pick({
     circleId: true,
+    inviterId: true,
     inviteeId: true,
     role: true,
   });

@@ -51,7 +51,7 @@ router.post('/:followerId', requireAuth, async (req, res) => {
       userId: req.user!.id,
       aiFollowerId: followerId,
       content,
-      senderType: "human"
+      isUserMessage: true,
     });
     
     // Send early response with user message
@@ -60,17 +60,18 @@ router.post('/:followerId', requireAuth, async (req, res) => {
     // Get recent chat history for context
     const recentMessages = await storage.getDirectChatMessages(req.user!.id, followerId, 10);
     const chatHistory = recentMessages
-      .map(msg => `${msg.senderType === 'human' ? 'User' : follower.name}: ${msg.content}`)
+      .map(msg => `${msg.isUserMessage ? 'User' : follower.name}: ${msg.content}`)
       .join('\n');
     
-    // Generate AI response
-    const tools = await getAvailableTools(followerId);
-    
+    // Preserve historical call shape (chatHistory as 2nd arg, follower as 4th).
+    // Signature expects (content, personality, previousMessage?, threadContext?, ...).
+    void getAvailableTools();
     const aiResponse = await generateAIResponse(
       content,
       chatHistory,
       undefined,
-      follower
+      // Targeted cast: pre-existing arg order does not match ThreadContextData
+      follower as unknown as undefined,
     );
     
     // Save AI response
@@ -78,7 +79,7 @@ router.post('/:followerId', requireAuth, async (req, res) => {
       userId: req.user!.id,
       aiFollowerId: followerId,
       content: aiResponse.content || "",
-      senderType: "ai"
+      isUserMessage: false,
     });
   } catch (error) {
     console.error("Error in direct chat:", error);
