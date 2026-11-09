@@ -533,7 +533,7 @@ export default function LabDetailPage() {
                     <CardFooter className="flex flex-col items-start gap-4 pt-0">
                       <LabGoalsEditor 
                         lab={lab} 
-                        onSave={handleGoalsUpdate}
+                        onUpdate={handleGoalsUpdate}
                       />
                       
                       <div className="w-full border-t mt-2 pt-4">

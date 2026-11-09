@@ -70,7 +70,7 @@ export default function AiFollowersPage() {
       const allInterests = new Set<string>();
       followers.forEach(follower => {
         if (follower.interests && follower.interests.length > 0) {
-          follower.interests.forEach(interest => allInterests.add(interest));
+          follower.interests.forEach((interest: string) => allInterests.add(interest));
         }
       });
       setAvailableInterests(Array.from(allInterests).sort());
@@ -105,16 +105,16 @@ export default function AiFollowersPage() {
         
         // Search interests
         const interestsMatch = follower.interests?.some(
-          interest => interest.toLowerCase().includes(query)
+          (interest: string) => interest.toLowerCase().includes(query)
         ) || false;
         
         // Search interaction preferences
         const likesMatch = follower.interactionPreferences?.likes?.some(
-          like => like.toLowerCase().includes(query)
+          (like: string) => like.toLowerCase().includes(query)
         ) || false;
         
         const dislikesMatch = follower.interactionPreferences?.dislikes?.some(
-          dislike => dislike.toLowerCase().includes(query)
+          (dislike: string) => dislike.toLowerCase().includes(query)
         ) || false;
         
         // Match if any of the fields contain the search term

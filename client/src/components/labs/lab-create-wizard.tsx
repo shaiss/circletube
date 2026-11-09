@@ -181,12 +181,11 @@ const LabCreateWizard = ({
       setValue("successMetrics.metrics", typedMetrics);
     }
     
-    // Also update experiment type if it matches one of our valid types
-    if (template.experimentType && (
-      template.experimentType === "a_b_test" || 
-      template.experimentType === "multivariate" || 
-      template.experimentType === "exploration"
-    )) {
+    // Also update experiment type if it matches one of our valid form types
+    if (
+      template.experimentType === "a_b_test" ||
+      template.experimentType === "single_variant"
+    ) {
       setValue("experimentType", template.experimentType);
     }
     
@@ -310,7 +309,7 @@ const LabCreateWizard = ({
           const contentPromises = labContent.map(content => 
             apiRequest(`/api/labs/${createdLab.id}/content`, "POST", {
               content: content.content,
-              targetRole: content.targetRole
+              circleId: content.circleId,
             })
           );
           
