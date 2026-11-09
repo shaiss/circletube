@@ -69,6 +69,11 @@ SESSION_SECRET=your_session_secret
 
 `SESSION_SECRET` is required when `NODE_ENV=production` (including `npm start`). Local development may omit it and will use a plaintext fallback with a warning; do not rely on that fallback in any deploy.
 
+### Session store
+- **Production** (`NODE_ENV=production`, e.g. `npm start` on Railway): `connect-pg-simple` persists sessions in Postgres via `DATABASE_URL`, so restarts do not drop logins. The store creates the default `session` table on first use if it is missing (`createTableIfMissing`; schema matches `node_modules/connect-pg-simple/table.sql`). No separate Drizzle migration is required for that table.
+- **Local / dev** (`npm run dev`): in-memory `memorystore` (same easy path as before). App data still needs `DATABASE_URL` and `npm run db:push`.
+- Env **names** only: `DATABASE_URL`, `SESSION_SECRET`. Never commit secret values. See `docs/deploy-railway.md` for Railway notes.
+
 ### Installation
 1. Clone the repository
 2. Install dependencies:
