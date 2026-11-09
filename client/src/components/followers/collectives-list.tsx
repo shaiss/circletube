@@ -105,7 +105,7 @@ export function CollectivesList() {
                 <div>
                   <CardTitle>{collective.name}</CardTitle>
                   <CardDescription>
-                    Created {formatRelativeTime(new Date(collective.createdAt))}
+                    Created {formatRelativeTime(collective.createdAt)}
                   </CardDescription>
                 </div>
                 <Badge variant="outline" className="flex items-center">

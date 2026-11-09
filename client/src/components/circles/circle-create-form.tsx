@@ -105,6 +105,7 @@ export function CircleCreateForm() {
               <FormControl>
                 <Textarea
                   {...field}
+                  value={field.value ?? ""}
                   placeholder="Describe the purpose of this circle"
                 />
               </FormControl>
@@ -118,7 +119,7 @@ export function CircleCreateForm() {
             <FormItem>
               <FormLabel>Color</FormLabel>
               <FormControl>
-                <Input {...field} type="color" className="h-10 px-2" />
+                <Input {...field} value={field.value ?? ""} type="color" className="h-10 px-2" />
               </FormControl>
               <FormDescription>
                 Choose a color to represent this circle

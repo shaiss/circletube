@@ -2,6 +2,27 @@ import { apiRequest } from './queryClient';
 import { MetricResult, Recommendation, LabCircle } from '@/components/labs/lab-results-analyzer';
 import { Post } from "@shared/schema";
 
+/** Narrow unknown catch values without widening to `any`. */
+function errorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : 'Unknown error';
+}
+
+function errorStack(error: unknown): string | undefined {
+  return error instanceof Error ? error.stack : undefined;
+}
+
+/** Post shape used in lab analysis (DB post plus optional computed metrics). */
+export type AnalyzablePost = Post & {
+  metrics?: { interactions?: number };
+};
+
+/** Circle bucket returned by groupPostsByCircleRole (id/name + posts). */
+export interface CircleWithPosts {
+  id: number;
+  name: string;
+  posts: AnalyzablePost[];
+}
+
 /**
  * Interface for cached lab analysis results
  * 
@@ -318,10 +339,10 @@ export async function analyzeMetricWithCache(
         status: "fail",
         confidence: 0,
         difference: "N/A",
-        analysis: `Error: ${error.message || 'Unknown error'}`,
+        analysis: `Error: ${errorMessage(error)}`,
         diagnostics: {
-          error: error.message,
-          stack: error.stack,
+          error: errorMessage(error),
+          stack: errorStack(error),
           timestamp: new Date().toISOString()
         }
       };
@@ -428,10 +449,10 @@ export async function generateRecommendationWithCache(
       return {
         decision: "rethink",
         confidence: 0,
-        reasoning: `Error: ${error.message || 'Unknown error'}`,
+        reasoning: `Error: ${errorMessage(error)}`,
         diagnostics: {
-          error: error.message,
-          stack: error.stack,
+          error: errorMessage(error),
+          stack: errorStack(error),
           timestamp: new Date().toISOString()
         }
       };
@@ -444,7 +465,11 @@ export async function generateRecommendationWithCache(
 export function groupPostsByCircleRole(
   circles: LabCircle[] | undefined,
   posts: Post[] | undefined
-) {
+): {
+  controlCircles: CircleWithPosts[];
+  treatmentCircles: CircleWithPosts[];
+  observationCircles: CircleWithPosts[];
+} {
   if (!circles || !posts) {
     return {
       controlCircles: [],

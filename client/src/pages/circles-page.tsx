@@ -31,7 +31,7 @@ export default function CirclesPage() {
     enabled: !!user,
   });
 
-  const { data: invitations } = useQuery<CircleInvitation[]>({
+  const { data: invitations } = useQuery<(CircleInvitation & { circle: Circle })[]>({
     queryKey: ["/api/circles/invitations/pending"],
     enabled: !!user,
   });

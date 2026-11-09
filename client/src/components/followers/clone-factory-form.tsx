@@ -10,7 +10,7 @@ import type { AiFollower } from "@shared/schema";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { Check, ChevronsUpDown, Info, Search, User } from "lucide-react";
+import { Check, ChevronsUpDown, Info, User } from "lucide-react";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -140,7 +140,7 @@ export function CloneFactoryForm() {
           </PopoverTrigger>
           <PopoverContent className="p-0 w-[300px]">
             <Command>
-              <CommandInput placeholder="Search followers..." icon={Search} />
+              <CommandInput placeholder="Search followers..." />
               <CommandEmpty>No followers found.</CommandEmpty>
               <CommandGroup>
                 <CommandList>

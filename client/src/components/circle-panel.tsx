@@ -260,7 +260,7 @@ export function CirclePanel({ circleId, isCollapsed, onCollapse }: CirclePanelPr
                 </div>
                 
                 <div className="space-y-4 w-full overflow-hidden">
-                  {Array.from(followersByOwner.entries()).map(([userId, userFollowers]) => {
+                  {Array.from(followersByOwner, ([userId, userFollowers]) => {
                     const ownerMember = members.find(m => m.userId === userId);
                     const ownerName = ownerMember?.username || "Unknown User";
                     const isCurrentUser = userId === user?.id;

@@ -9,7 +9,9 @@ import {
   getLabAnalysisResults,
   deleteLabAnalysisResults,
   analyzeMetricWithCache,
-  generateRecommendationWithCache
+  generateRecommendationWithCache,
+  type AnalyzablePost,
+  type CircleWithPosts
 } from "@/lib/metricsApi";
 import { LabResponseProgressIndicator } from "./lab-response-progress-indicator";
 
@@ -343,13 +345,13 @@ export const useLabResultsAnalysis = (lab: Lab) => {
         console.log(`[Lab205Debug] Observation circles: ${observationCircles?.length || 0}, total posts: ${observationCircles?.reduce((sum, c) => sum + c.posts.length, 0) || 0}`);
         
         // Check for any content size issues
-        const checkCircleContent = (circles, role) => {
+        const checkCircleContent = (circles: CircleWithPosts[], role: string) => {
           let totalContentLength = 0;
           let maxContentLength = 0;
           let largeContentPosts = 0;
           
-          circles.forEach(circle => {
-            circle.posts.forEach(post => {
+          circles.forEach((circle: CircleWithPosts) => {
+            circle.posts.forEach((post: AnalyzablePost) => {
               const contentLength = post.content?.length || 0;
               totalContentLength += contentLength;
               maxContentLength = Math.max(maxContentLength, contentLength);
@@ -392,15 +394,15 @@ export const useLabResultsAnalysis = (lab: Lab) => {
             console.log(`[Lab205Debug] Preparing request data for metric: ${metric.name}`);
             
             // Enhanced helper function to intelligently sample and limit content size
-            const limitCircleContent = (circles, maxPostsPerCircle = 15, maxContentLength = 1000) => {
-              return circles.map(circle => {
+            const limitCircleContent = (circles: CircleWithPosts[], maxPostsPerCircle = 15, maxContentLength = 1000) => {
+              return circles.map((circle: CircleWithPosts) => {
                 // If this circle has few posts, we don't need to sample
                 if (!circle.posts || circle.posts.length <= maxPostsPerCircle) {
                   // Just limit content length
                   return {
                     id: circle.id,
                     name: circle.name,
-                    posts: (circle.posts || []).map(post => ({
+                    posts: (circle.posts || []).map((post: AnalyzablePost) => ({
                       ...post,
                       content: post.content && post.content.length > maxContentLength 
                         ? post.content.substring(0, maxContentLength) 
@@ -413,8 +415,8 @@ export const useLabResultsAnalysis = (lab: Lab) => {
                 console.log(`[Data Sampling] Circle ${circle.id}: Sampling ${maxPostsPerCircle} posts from ${circle.posts.length} total`);
                 
                 // More sophisticated post scoring and sampling
-                const scorePosts = (posts) => {
-                  return posts.map(post => {
+                const scorePosts = (posts: AnalyzablePost[]) => {
+                  return posts.map((post: AnalyzablePost) => {
                     // Base score starts with interactions (if available)
                     let score = post.metrics?.interactions || 0;
                     
@@ -497,14 +499,14 @@ export const useLabResultsAnalysis = (lab: Lab) => {
             console.log(`[Lab205Debug] Content limited to max 1000 chars per post`);
           } else {
             // Define the smart sampling and limiting function for all labs
-            const limitCircleContent = (circles, maxPostsPerCircle = 15, maxContentLength = 1000) => {
-              return circles.map(circle => {
+            const limitCircleContent = (circles: CircleWithPosts[], maxPostsPerCircle = 15, maxContentLength = 1000) => {
+              return circles.map((circle: CircleWithPosts) => {
                 // If this circle has few posts, just limit content length
                 if (!circle.posts || circle.posts.length <= maxPostsPerCircle) {
                   return {
                     id: circle.id,
                     name: circle.name,
-                    posts: (circle.posts || []).map(post => ({
+                    posts: (circle.posts || []).map((post: AnalyzablePost) => ({
                       ...post,
                       content: post.content && post.content.length > maxContentLength 
                         ? post.content.substring(0, maxContentLength) 
@@ -514,7 +516,7 @@ export const useLabResultsAnalysis = (lab: Lab) => {
                 }
                 
                 // Sort posts by interactions or recency for larger datasets
-                const sortedPosts = [...circle.posts].sort((a, b) => {
+                const sortedPosts = [...circle.posts].sort((a: AnalyzablePost, b: AnalyzablePost) => {
                   const aInteractions = a.metrics?.interactions || 0;
                   const bInteractions = b.metrics?.interactions || 0;
                   
