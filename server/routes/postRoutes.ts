@@ -26,10 +26,14 @@ router.post('/test-pending-response', requireAuth, async (req, res) => {
     }
 
     const post = await storage.getPost(postId);
-    if (!post) {
-      return res.status(404).json({ message: "Post not found" });
+    if (
+      !post ||
+      post.circleId == null ||
+      !(await hasCirclePermission(post.circleId, req.user!.id, storage))
+    ) {
+      return res.status(404).json({ message: "Post not found or you don't have permission" });
     }
-    
+
     // Calculate scheduled time
     const scheduledTime = new Date();
     scheduledTime.setMinutes(scheduledTime.getMinutes() + Number(delayMinutes));

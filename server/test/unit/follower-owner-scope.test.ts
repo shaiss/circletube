@@ -9,6 +9,7 @@ const mockGetAiFollower = jest.fn();
 const mockGetUser = jest.fn();
 const mockGetPost = jest.fn();
 const mockCreatePendingResponse = jest.fn();
+const mockHasCirclePermission = jest.fn();
 
 jest.mock("../../storage", () => ({
   storage: {
@@ -54,7 +55,8 @@ jest.mock("../../routes/middleware", () => ({
     req.user = { id: 7 };
     next();
   },
-  hasCirclePermission: jest.fn(),
+  hasCirclePermission: (...args: unknown[]) =>
+    mockHasCirclePermission(...args),
 }));
 
 import followerRoutes from "../../routes/followerRoutes";
@@ -114,6 +116,7 @@ describe("GET /api/followers/:id scoped to the follower's owner", () => {
     mockGetUser.mockReset();
     mockGetPost.mockReset();
     mockCreatePendingResponse.mockReset();
+    mockHasCirclePermission.mockReset();
   });
 
   it("returns 200 and the full record when the follower is owned by the user", async () => {
@@ -215,9 +218,10 @@ describe("POST /api/posts/test-pending-response scoped to the follower's owner",
     mockGetUser.mockReset();
     mockGetPost.mockReset();
     mockCreatePendingResponse.mockReset();
+    mockHasCirclePermission.mockReset();
   });
 
-  it("returns 200 and creates a pending response when the follower is owned by the user", async () => {
+  it("returns 200 and creates a pending response when the follower is owned by the user and the post is in a permitted circle", async () => {
     const pendingResponse = {
       id: 31,
       postId: 21,
@@ -226,6 +230,7 @@ describe("POST /api/posts/test-pending-response scoped to the follower's owner",
     };
     mockGetAiFollower.mockResolvedValue(ownedFollower);
     mockGetPost.mockResolvedValue(post);
+    mockHasCirclePermission.mockResolvedValue(true);
     mockCreatePendingResponse.mockResolvedValue(pendingResponse);
 
     const response = await request(app)
@@ -239,6 +244,7 @@ describe("POST /api/posts/test-pending-response scoped to the follower's owner",
     });
     expect(mockGetAiFollower).toHaveBeenCalledWith(11);
     expect(mockGetPost).toHaveBeenCalledWith(21);
+    expect(mockHasCirclePermission).toHaveBeenCalledWith(3, 7, expect.anything());
     expect(mockCreatePendingResponse).toHaveBeenCalledWith(
       expect.objectContaining({
         postId: 21,
@@ -288,6 +294,43 @@ describe("POST /api/posts/test-pending-response scoped to the follower's owner",
     expect(response.body).toEqual(notFoundBody);
     expect(mockGetAiFollower).toHaveBeenCalledWith(11);
     expect(mockGetPost).not.toHaveBeenCalled();
+    expect(mockCreatePendingResponse).not.toHaveBeenCalled();
+  });
+
+  const postNotFoundBody = {
+    message: "Post not found or you don't have permission",
+  };
+
+  it("returns 404 when the post is in another user's circle and does not write a pending response", async () => {
+    mockGetAiFollower.mockResolvedValue(ownedFollower);
+    mockGetPost.mockResolvedValue(post);
+    mockHasCirclePermission.mockResolvedValue(false);
+
+    const response = await request(app)
+      .post("/api/posts/test-pending-response")
+      .send({ postId: 21, followerId: 11, delayMinutes: 5 });
+
+    expect(response.status).toBe(404);
+    expect(response.body).toEqual(postNotFoundBody);
+    expect(mockGetAiFollower).toHaveBeenCalledWith(11);
+    expect(mockGetPost).toHaveBeenCalledWith(21);
+    expect(mockHasCirclePermission).toHaveBeenCalledWith(3, 7, expect.anything());
+    expect(mockCreatePendingResponse).not.toHaveBeenCalled();
+  });
+
+  it("returns 404 when the post is missing, with the same body as a not-permitted post, and does not write a pending response", async () => {
+    mockGetAiFollower.mockResolvedValue(ownedFollower);
+    mockGetPost.mockResolvedValue(undefined);
+
+    const response = await request(app)
+      .post("/api/posts/test-pending-response")
+      .send({ postId: 21, followerId: 11, delayMinutes: 5 });
+
+    expect(response.status).toBe(404);
+    expect(response.body).toEqual(postNotFoundBody);
+    expect(mockGetAiFollower).toHaveBeenCalledWith(11);
+    expect(mockGetPost).toHaveBeenCalledWith(21);
+    expect(mockHasCirclePermission).not.toHaveBeenCalled();
     expect(mockCreatePendingResponse).not.toHaveBeenCalled();
   });
 });
