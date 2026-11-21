@@ -12,24 +12,22 @@ const contextManager = ThreadContextManager.getInstance();
 /**
  * POST /api/posts/test-pending-response - Test endpoint to create a pending response
  */
-router.post('/test-pending-response', async (req, res) => {
+router.post('/test-pending-response', requireAuth, async (req, res) => {
   try {
     const { postId, followerId, delayMinutes = 5 } = req.body;
     
     if (!postId || !followerId) {
       return res.status(400).json({ message: "Missing required parameters: postId and followerId are required" });
     }
-    
-    // Get the post and follower
-    const post = await storage.getPost(postId);
+
     const follower = await storage.getAiFollower(followerId);
-    
+    if (!follower || follower.userId !== req.user!.id) {
+      return res.status(404).json({ message: "AI Follower not found or you don't have permission" });
+    }
+
+    const post = await storage.getPost(postId);
     if (!post) {
       return res.status(404).json({ message: "Post not found" });
-    }
-    
-    if (!follower) {
-      return res.status(404).json({ message: "AI follower not found" });
     }
     
     // Calculate scheduled time
