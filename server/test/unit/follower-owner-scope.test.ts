@@ -1,5 +1,6 @@
 /**
- * Follower reads and reply scheduling are scoped to the follower's owner.
+ * Follower reads are scoped to the follower's owner.
+ * POST /api/posts/test-pending-response is not mounted.
  */
 
 import express from "express";
@@ -7,17 +8,11 @@ import request from "supertest";
 
 const mockGetAiFollower = jest.fn();
 const mockGetUser = jest.fn();
-const mockGetPost = jest.fn();
-const mockCreatePendingResponse = jest.fn();
-const mockHasCirclePermission = jest.fn();
 
 jest.mock("../../storage", () => ({
   storage: {
     getAiFollower: (...args: unknown[]) => mockGetAiFollower(...args),
     getUser: (...args: unknown[]) => mockGetUser(...args),
-    getPost: (...args: unknown[]) => mockGetPost(...args),
-    createPendingResponse: (...args: unknown[]) =>
-      mockCreatePendingResponse(...args),
   },
 }));
 
@@ -55,8 +50,7 @@ jest.mock("../../routes/middleware", () => ({
     req.user = { id: 7 };
     next();
   },
-  hasCirclePermission: (...args: unknown[]) =>
-    mockHasCirclePermission(...args),
+  hasCirclePermission: jest.fn(),
 }));
 
 import followerRoutes from "../../routes/followerRoutes";
@@ -114,9 +108,6 @@ describe("GET /api/followers/:id scoped to the follower's owner", () => {
   beforeEach(() => {
     mockGetAiFollower.mockReset();
     mockGetUser.mockReset();
-    mockGetPost.mockReset();
-    mockCreatePendingResponse.mockReset();
-    mockHasCirclePermission.mockReset();
   });
 
   it("returns 200 and the full record when the follower is owned by the user", async () => {
@@ -173,164 +164,26 @@ describe("GET /api/followers/:id scoped to the follower's owner", () => {
   });
 });
 
-describe("POST /api/posts/test-pending-response scoped to the follower's owner", () => {
+describe("POST /api/posts/test-pending-response", () => {
   let app: express.Express;
-
-  const ownedFollower = {
-    id: 11,
-    userId: 7,
-    name: "Ada",
-    personality: "witty and curious",
-    avatarUrl: "https://cdn.example/ada.png",
-  };
-
-  const otherOwnerFollower = {
-    ...ownedFollower,
-    userId: 8,
-    name: "Bea",
-  };
-
-  const unownedFollower = {
-    ...ownedFollower,
-    userId: null,
-    name: "Cora",
-  };
-
-  const post = {
-    id: 21,
-    userId: 7,
-    circleId: 3,
-    content: "Hello circle",
-  };
-
-  const notFoundBody = {
-    message: "AI Follower not found or you don't have permission",
-  };
+  const originalNodeEnv = process.env.NODE_ENV;
 
   beforeAll(() => {
+    process.env.NODE_ENV = "production";
     app = express();
     app.use(express.json());
     app.use("/api/posts", postRoutes);
   });
 
-  beforeEach(() => {
-    mockGetAiFollower.mockReset();
-    mockGetUser.mockReset();
-    mockGetPost.mockReset();
-    mockCreatePendingResponse.mockReset();
-    mockHasCirclePermission.mockReset();
+  afterAll(() => {
+    process.env.NODE_ENV = originalNodeEnv;
   });
 
-  it("returns 200 and creates a pending response when the follower is owned by the user and the post is in a permitted circle", async () => {
-    const pendingResponse = {
-      id: 31,
-      postId: 21,
-      aiFollowerId: 11,
-      processed: false,
-    };
-    mockGetAiFollower.mockResolvedValue(ownedFollower);
-    mockGetPost.mockResolvedValue(post);
-    mockHasCirclePermission.mockResolvedValue(true);
-    mockCreatePendingResponse.mockResolvedValue(pendingResponse);
-
+  it("returns 404 when NODE_ENV is production", async () => {
     const response = await request(app)
       .post("/api/posts/test-pending-response")
-      .send({ postId: 21, followerId: 11, delayMinutes: 5 });
-
-    expect(response.status).toBe(200);
-    expect(response.body).toEqual({
-      message: "Pending response created successfully",
-      pendingResponse,
-    });
-    expect(mockGetAiFollower).toHaveBeenCalledWith(11);
-    expect(mockGetPost).toHaveBeenCalledWith(21);
-    expect(mockHasCirclePermission).toHaveBeenCalledWith(3, 7, expect.anything());
-    expect(mockCreatePendingResponse).toHaveBeenCalledWith(
-      expect.objectContaining({
-        postId: 21,
-        aiFollowerId: 11,
-        processed: false,
-        metadata: null,
-      }),
-    );
-  });
-
-  it("returns 404 when the follower is owned by another user and does not write a pending response or read the post", async () => {
-    mockGetAiFollower.mockResolvedValue(otherOwnerFollower);
-
-    const response = await request(app)
-      .post("/api/posts/test-pending-response")
-      .send({ postId: 21, followerId: 11, delayMinutes: 5 });
+      .send({ postId: 21, followerId: 11 });
 
     expect(response.status).toBe(404);
-    expect(response.body).toEqual(notFoundBody);
-    expect(mockGetAiFollower).toHaveBeenCalledWith(11);
-    expect(mockGetPost).not.toHaveBeenCalled();
-    expect(mockCreatePendingResponse).not.toHaveBeenCalled();
-  });
-
-  it("returns 404 when the follower is missing and does not write a pending response or read the post", async () => {
-    mockGetAiFollower.mockResolvedValue(undefined);
-
-    const response = await request(app)
-      .post("/api/posts/test-pending-response")
-      .send({ postId: 21, followerId: 11, delayMinutes: 5 });
-
-    expect(response.status).toBe(404);
-    expect(response.body).toEqual(notFoundBody);
-    expect(mockGetAiFollower).toHaveBeenCalledWith(11);
-    expect(mockGetPost).not.toHaveBeenCalled();
-    expect(mockCreatePendingResponse).not.toHaveBeenCalled();
-  });
-
-  it("returns 404 when the follower has a null userId and does not write a pending response or read the post", async () => {
-    mockGetAiFollower.mockResolvedValue(unownedFollower);
-
-    const response = await request(app)
-      .post("/api/posts/test-pending-response")
-      .send({ postId: 21, followerId: 11, delayMinutes: 5 });
-
-    expect(response.status).toBe(404);
-    expect(response.body).toEqual(notFoundBody);
-    expect(mockGetAiFollower).toHaveBeenCalledWith(11);
-    expect(mockGetPost).not.toHaveBeenCalled();
-    expect(mockCreatePendingResponse).not.toHaveBeenCalled();
-  });
-
-  const postNotFoundBody = {
-    message: "Post not found or you don't have permission",
-  };
-
-  it("returns 404 when the post is in another user's circle and does not write a pending response", async () => {
-    mockGetAiFollower.mockResolvedValue(ownedFollower);
-    mockGetPost.mockResolvedValue(post);
-    mockHasCirclePermission.mockResolvedValue(false);
-
-    const response = await request(app)
-      .post("/api/posts/test-pending-response")
-      .send({ postId: 21, followerId: 11, delayMinutes: 5 });
-
-    expect(response.status).toBe(404);
-    expect(response.body).toEqual(postNotFoundBody);
-    expect(mockGetAiFollower).toHaveBeenCalledWith(11);
-    expect(mockGetPost).toHaveBeenCalledWith(21);
-    expect(mockHasCirclePermission).toHaveBeenCalledWith(3, 7, expect.anything());
-    expect(mockCreatePendingResponse).not.toHaveBeenCalled();
-  });
-
-  it("returns 404 when the post is missing, with the same body as a not-permitted post, and does not write a pending response", async () => {
-    mockGetAiFollower.mockResolvedValue(ownedFollower);
-    mockGetPost.mockResolvedValue(undefined);
-
-    const response = await request(app)
-      .post("/api/posts/test-pending-response")
-      .send({ postId: 21, followerId: 11, delayMinutes: 5 });
-
-    expect(response.status).toBe(404);
-    expect(response.body).toEqual(postNotFoundBody);
-    expect(mockGetAiFollower).toHaveBeenCalledWith(11);
-    expect(mockGetPost).toHaveBeenCalledWith(21);
-    expect(mockHasCirclePermission).not.toHaveBeenCalled();
-    expect(mockCreatePendingResponse).not.toHaveBeenCalled();
   });
 });

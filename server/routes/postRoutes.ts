@@ -10,54 +10,6 @@ const router = Router();
 const contextManager = ThreadContextManager.getInstance(); 
 
 /**
- * POST /api/posts/test-pending-response - Test endpoint to create a pending response
- */
-router.post('/test-pending-response', requireAuth, async (req, res) => {
-  try {
-    const { postId, followerId, delayMinutes = 5 } = req.body;
-    
-    if (!postId || !followerId) {
-      return res.status(400).json({ message: "Missing required parameters: postId and followerId are required" });
-    }
-
-    const follower = await storage.getAiFollower(followerId);
-    if (!follower || follower.userId !== req.user!.id) {
-      return res.status(404).json({ message: "AI Follower not found or you don't have permission" });
-    }
-
-    const post = await storage.getPost(postId);
-    if (
-      !post ||
-      post.circleId == null ||
-      !(await hasCirclePermission(post.circleId, req.user!.id, storage))
-    ) {
-      return res.status(404).json({ message: "Post not found or you don't have permission" });
-    }
-
-    // Calculate scheduled time
-    const scheduledTime = new Date();
-    scheduledTime.setMinutes(scheduledTime.getMinutes() + Number(delayMinutes));
-    
-    // Create pending response
-    const pendingResponse = await storage.createPendingResponse({
-      postId,
-      aiFollowerId: followerId,
-      scheduledFor: scheduledTime,
-      processed: false,
-      metadata: null,
-    });
-    
-    res.status(200).json({
-      message: "Pending response created successfully",
-      pendingResponse
-    });
-  } catch (error) {
-    console.error("Error creating test pending response:", error);
-    res.status(500).json({ message: "Failed to create test pending response" });
-  }
-});
-
-/**
  * GET /api/posts - Get posts from circles the user has access to
  */
 router.get('/', requireAuth, async (req, res) => {
