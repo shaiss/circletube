@@ -7,6 +7,7 @@ module.exports = {
     "<rootDir>/server/test/simple.test.ts",
     "<rootDir>/server/sanitizeUser.test.ts",
     "<rootDir>/server/test/unit/direct-chat-ai-args.test.ts",
+    "<rootDir>/server/test/unit/generate-ai-response-history.test.ts",
   ],
   moduleNameMapper: {
     "^@shared/(.*)$": "<rootDir>/shared/$1",

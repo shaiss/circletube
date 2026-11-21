@@ -218,31 +218,29 @@ export async function generateAIResponse(
   try {
     const contextManager = ThreadContextManager.getInstance();
 
-    // Build comprehensive conversation history
+    // Build comprehensive conversation history.
+    // previousMessages wins even when threadContext is absent (direct chat).
     let conversationHistory = "";
-    if (threadContext) {
-      // If we have detailed previous messages history, use that for richer context
-      if (previousMessages) {
-        conversationHistory = `Recent conversation history:
+    if (previousMessages) {
+      conversationHistory = `Recent conversation history:
            ${previousMessages}
            
            Current message to respond to: "${postContent}"`;
-      } else {
-        // Otherwise use the basic thread context
-        const depthAwareHistory = threadContext.threadDepth <= 3
-          ? `Recent conversation history:
+    } else if (threadContext) {
+      // Otherwise use the basic thread context
+      const depthAwareHistory = threadContext.threadDepth <= 3
+        ? `Recent conversation history:
              Last message: "${threadContext.immediateContext}"
              Earlier message: "${threadContext.parentMessage}"
              Topic started with: "${threadContext.threadTopic || 'various topics'}"
   
              Current message to respond to: "${postContent}"`
-          : `You're deep in a conversation thread. 
+        : `You're deep in a conversation thread. 
              Latest message: "${postContent}"
   
              Note: Given your personality, you might not remember exactly how this conversation started.`;
-  
-        conversationHistory = depthAwareHistory;
-      }
+
+      conversationHistory = depthAwareHistory;
     }
 
     // Generate tools prompt if the follower has any tools equipped
