@@ -225,6 +225,12 @@ describe("POST /api/posts/test-pending-response no longer exists", () => {
       .send({ postId: 21, followerId: 11, delayMinutes: 5 });
 
     expect(response.status).toBe(404);
+    // Express's own fallthrough 404, not a handler's JSON 404.
+    expect(response.text).toContain(
+      "Cannot POST /api/posts/test-pending-response",
+    );
+    expect(mockGetAiFollower).not.toHaveBeenCalled();
+    expect(mockHasCirclePermission).not.toHaveBeenCalled();
     expect(mockGetPost).not.toHaveBeenCalled();
     expect(mockCreatePendingResponse).not.toHaveBeenCalled();
   }
