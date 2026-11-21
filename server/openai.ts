@@ -156,8 +156,11 @@ function generateToolsPrompt(follower?: AiFollower): string {
     return '';
   }
 
-  // Filter only enabled tools
-  const enabledTools = follower.tools.equipped.filter(tool => tool.enabled);
+  type EquippedTool = { id: string; name: string; description: string; enabled: boolean };
+  // Filter only enabled tools (explicit type: AiFollower.tools is widened while ai_followers is circular)
+  const enabledTools = (follower.tools.equipped as EquippedTool[]).filter(
+    (tool: EquippedTool) => tool.enabled
+  );
   if (enabledTools.length === 0) {
     return '';
   }
@@ -167,12 +170,12 @@ function generateToolsPrompt(follower?: AiFollower): string {
 You have access to the following tools to help in your responses:`;
 
   // Add each enabled tool
-  enabledTools.forEach(tool => {
+  enabledTools.forEach((tool: EquippedTool) => {
     toolsPrompt += `\n- ${tool.name}: ${tool.description}`;
   });
 
   // Add calculator specific information if it's enabled
-  if (enabledTools.some(tool => tool.id === 'calculator')) {
+  if (enabledTools.some((tool: EquippedTool) => tool.id === 'calculator')) {
     toolsPrompt += `\n\nTo use the Calculator tool, include calculations in your response using this format:
 [calc: 5+3*2] or [calculate: (10-5)/2]
 The calculation will be automatically processed and the result will replace the expression in your final response.

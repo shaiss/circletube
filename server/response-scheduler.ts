@@ -270,7 +270,8 @@ export class ResponseScheduler {
       zen: { min: 480, max: 1440 }
     };
 
-    const range = delays[follower.responsiveness] || delays.active;
+    const responsiveness = follower.responsiveness as keyof typeof delays;
+    const range = delays[responsiveness] || delays.active;
     return Math.floor(Math.random() * (range.max - range.min + 1)) + range.min;
   }
 

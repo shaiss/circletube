@@ -123,7 +123,7 @@ export class ThreadContextManager {
     const parentWords = new Set(parentMessage.toLowerCase().split(/\s+/));
 
     const intersection = new Set(
-      [...currentWords].filter(word => parentWords.has(word))
+      Array.from(currentWords).filter(word => parentWords.has(word))
     );
 
     const overlapScore = intersection.size / 

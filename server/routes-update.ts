@@ -1,5 +1,14 @@
+import type { Express, Request, Response } from "express";
+import { storage } from "./storage";
+import { hasCirclePermission } from "./routes/middleware";
+
+/**
+ * Registers lab-circle attachment routes that were previously an untyped snippet.
+ * Safe to call from route setup; currently unused by the main router.
+ */
+export function registerLabCircleUpdateRoutes(app: Express): void {
   // Add a circle to a lab
-  app.post("/api/labs/:id/circles", async (req, res) => {
+  app.post("/api/labs/:id/circles", async (req: Request, res: Response) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
 
     try {
@@ -50,3 +59,4 @@
       res.status(500).json({ message: "Failed to add circle to lab" });
     }
   });
+}

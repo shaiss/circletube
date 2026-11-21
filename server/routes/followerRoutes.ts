@@ -49,7 +49,7 @@ router.get('/:id', requireAuth, async (req, res) => {
       creator: creatorUser ? {
         id: creatorUser.id,
         username: creatorUser.username,
-        displayName: creatorUser.displayName,
+        displayName: creatorUser.username, // User has no displayName column; mirror username
         avatarUrl: creatorUser.avatarUrl
       } : undefined
     });
