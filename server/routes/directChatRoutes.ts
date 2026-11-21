@@ -2,7 +2,6 @@ import { Router } from 'express';
 import { storage } from '../storage';
 import { requireAuth } from './middleware';
 import { generateAIResponse } from '../openai';
-import { getAvailableTools } from '../tools';
 
 const router = Router();
 
@@ -63,15 +62,13 @@ router.post('/:followerId', requireAuth, async (req, res) => {
       .map(msg => `${msg.isUserMessage ? 'User' : follower.name}: ${msg.content}`)
       .join('\n');
     
-    // Preserve historical call shape (chatHistory as 2nd arg, follower as 4th).
-    // Signature expects (content, personality, previousMessage?, threadContext?, ...).
-    void getAvailableTools();
     const aiResponse = await generateAIResponse(
       content,
-      chatHistory,
+      follower.personality,
       undefined,
-      // Targeted cast: pre-existing arg order does not match ThreadContextData
-      follower as unknown as undefined,
+      undefined,
+      chatHistory,
+      follower,
     );
     
     // Save AI response
