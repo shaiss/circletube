@@ -8,11 +8,17 @@ import request from "supertest";
 
 const mockGetAiFollower = jest.fn();
 const mockGetUser = jest.fn();
+const mockGetPost = jest.fn();
+const mockCreatePendingResponse = jest.fn();
+const mockHasCirclePermission = jest.fn();
 
 jest.mock("../../storage", () => ({
   storage: {
     getAiFollower: (...args: unknown[]) => mockGetAiFollower(...args),
     getUser: (...args: unknown[]) => mockGetUser(...args),
+    getPost: (...args: unknown[]) => mockGetPost(...args),
+    createPendingResponse: (...args: unknown[]) =>
+      mockCreatePendingResponse(...args),
   },
 }));
 
@@ -50,7 +56,8 @@ jest.mock("../../routes/middleware", () => ({
     req.user = { id: 7 };
     next();
   },
-  hasCirclePermission: jest.fn(),
+  hasCirclePermission: (...args: unknown[]) =>
+    mockHasCirclePermission(...args),
 }));
 
 import followerRoutes from "../../routes/followerRoutes";
@@ -108,6 +115,9 @@ describe("GET /api/followers/:id scoped to the follower's owner", () => {
   beforeEach(() => {
     mockGetAiFollower.mockReset();
     mockGetUser.mockReset();
+    mockGetPost.mockReset();
+    mockCreatePendingResponse.mockReset();
+    mockHasCirclePermission.mockReset();
   });
 
   it("returns 200 and the full record when the follower is owned by the user", async () => {
@@ -164,12 +174,24 @@ describe("GET /api/followers/:id scoped to the follower's owner", () => {
   });
 });
 
-describe("POST /api/posts/test-pending-response", () => {
+describe("POST /api/posts/test-pending-response no longer exists", () => {
   let app: express.Express;
   const originalNodeEnv = process.env.NODE_ENV;
 
+  const ownedFollower = {
+    id: 11,
+    userId: 7,
+    name: "Ada",
+  };
+
+  const post = {
+    id: 21,
+    userId: 7,
+    circleId: 3,
+    content: "Hello circle",
+  };
+
   beforeAll(() => {
-    process.env.NODE_ENV = "production";
     app = express();
     app.use(express.json());
     app.use("/api/posts", postRoutes);
@@ -179,11 +201,41 @@ describe("POST /api/posts/test-pending-response", () => {
     process.env.NODE_ENV = originalNodeEnv;
   });
 
-  it("returns 404 when NODE_ENV is production", async () => {
+  beforeEach(() => {
+    mockGetAiFollower.mockReset();
+    mockGetUser.mockReset();
+    mockGetPost.mockReset();
+    mockCreatePendingResponse.mockReset();
+    mockHasCirclePermission.mockReset();
+
+    mockGetAiFollower.mockResolvedValue(ownedFollower);
+    mockGetPost.mockResolvedValue(post);
+    mockHasCirclePermission.mockResolvedValue(true);
+    mockCreatePendingResponse.mockResolvedValue({
+      id: 31,
+      postId: 21,
+      aiFollowerId: 11,
+      processed: false,
+    });
+  });
+
+  async function assertRouteIsAbsent() {
     const response = await request(app)
       .post("/api/posts/test-pending-response")
-      .send({ postId: 21, followerId: 11 });
+      .send({ postId: 21, followerId: 11, delayMinutes: 5 });
 
     expect(response.status).toBe(404);
+    expect(mockGetPost).not.toHaveBeenCalled();
+    expect(mockCreatePendingResponse).not.toHaveBeenCalled();
+  }
+
+  it("returns 404 and does not write when NODE_ENV is production", async () => {
+    process.env.NODE_ENV = "production";
+    await assertRouteIsAbsent();
+  });
+
+  it("returns 404 and does not write when NODE_ENV is unset", async () => {
+    delete process.env.NODE_ENV;
+    await assertRouteIsAbsent();
   });
 });
