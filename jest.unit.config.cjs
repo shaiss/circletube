@@ -7,6 +7,7 @@ module.exports = {
     "<rootDir>/server/test/simple.test.ts",
     "<rootDir>/server/sanitizeUser.test.ts",
     "<rootDir>/server/test/unit/direct-chat-owner-scope.test.ts",
+    "<rootDir>/server/test/unit/follower-owner-scope.test.ts",
   ],
   moduleNameMapper: {
     "^@shared/(.*)$": "<rootDir>/shared/$1",

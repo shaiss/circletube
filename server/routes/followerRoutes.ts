@@ -36,12 +36,12 @@ router.get('/:id', requireAuth, async (req, res) => {
   
   try {
     const follower = await storage.getAiFollower(followerId);
-    if (!follower) {
-      return res.status(404).json({ message: "AI Follower not found" });
+    if (!follower || follower.userId !== req.user!.id) {
+      return res.status(404).json({ message: "AI Follower not found or you don't have permission" });
     }
-    
+
     // Get follower metadata
-    const creatorUser = await storage.getUser(follower.userId || 0);
+    const creatorUser = await storage.getUser(follower.userId);
 
     // Return follower with additional data
     res.json({
