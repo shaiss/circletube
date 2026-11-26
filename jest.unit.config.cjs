@@ -10,6 +10,7 @@ module.exports = {
     "<rootDir>/server/test/unit/follower-owner-scope.test.ts",
     "<rootDir>/server/test/unit/direct-chat-ai-args.test.ts",
     "<rootDir>/server/test/unit/generate-ai-response-history.test.ts",
+    "<rootDir>/server/test/unit/has-circle-permission.test.ts",
     "<rootDir>/server/test/unit/nft-routes-gate.test.ts",
   ],
   moduleNameMapper: {
