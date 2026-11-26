@@ -10,6 +10,7 @@ import { insertUserSchema, User, InsertUser } from "@shared/schema";
 type SelectUser = Omit<User, "password">;
 import { getQueryFn, apiRequest, queryClient } from "../lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { refreshSessionScopedQueries } from "@/lib/session-queries";
 
 type AuthContextType = {
   user: SelectUser | null;
@@ -42,6 +43,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     },
     onSuccess: (user: SelectUser) => {
       queryClient.setQueryData(["/api/user"], user);
+      void refreshSessionScopedQueries(queryClient);
       
       // Prefetch default circle when user logs in
       queryClient.prefetchQuery({
@@ -65,6 +67,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     },
     onSuccess: (user: SelectUser) => {
       queryClient.setQueryData(["/api/user"], user);
+      void refreshSessionScopedQueries(queryClient);
       
       // Prefetch default circle when user registers
       queryClient.prefetchQuery({
@@ -87,6 +90,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     },
     onSuccess: () => {
       queryClient.setQueryData(["/api/user"], null);
+      void refreshSessionScopedQueries(queryClient);
     },
     onError: (error: Error) => {
       toast({
