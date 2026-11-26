@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { storage } from '../storage';
 import { requireAuth } from './middleware';
 import { generateAIResponse } from '../openai';
-import { getAvailableTools } from '../tools';
+import { processTextWithTools } from '../tools';
 
 const router = Router();
 
@@ -63,23 +63,35 @@ router.post('/:followerId', requireAuth, async (req, res) => {
       .map(msg => `${msg.isUserMessage ? 'User' : follower.name}: ${msg.content}`)
       .join('\n');
     
-    // Preserve historical call shape (chatHistory as 2nd arg, follower as 4th).
-    // Signature expects (content, personality, previousMessage?, threadContext?, ...).
-    void getAvailableTools();
     const aiResponse = await generateAIResponse(
       content,
-      chatHistory,
+      follower.personality,
       undefined,
-      // Targeted cast: pre-existing arg order does not match ThreadContextData
-      follower as unknown as undefined,
+      undefined,
+      chatHistory,
+      follower,
     );
     
+    // Process tool markup (e.g. [calc: ...]) the same way the response scheduler does
+    let replyContent = aiResponse.content || "";
+    let toolsUsed: ReturnType<typeof processTextWithTools>["toolsUsed"] | null = null;
+    if (replyContent && follower.tools?.equipped?.length) {
+      try {
+        const processResult = processTextWithTools(replyContent, follower);
+        replyContent = processResult.processedText;
+        toolsUsed = processResult.toolsUsed;
+      } catch (toolError) {
+        console.error("Error processing direct chat tools:", toolError);
+      }
+    }
+
     // Save AI response
     await storage.createDirectChatMessage({
       userId: req.user!.id,
       aiFollowerId: followerId,
-      content: aiResponse.content || "",
+      content: replyContent,
       isUserMessage: false,
+      toolsUsed,
     });
   } catch (error) {
     console.error("Error in direct chat:", error);

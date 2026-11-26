@@ -8,6 +8,8 @@ module.exports = {
     "<rootDir>/server/sanitizeUser.test.ts",
     "<rootDir>/server/test/unit/direct-chat-owner-scope.test.ts",
     "<rootDir>/server/test/unit/follower-owner-scope.test.ts",
+    "<rootDir>/server/test/unit/direct-chat-ai-args.test.ts",
+    "<rootDir>/server/test/unit/generate-ai-response-history.test.ts",
   ],
   moduleNameMapper: {
     "^@shared/(.*)$": "<rootDir>/shared/$1",
