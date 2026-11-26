@@ -15,14 +15,17 @@ import {
 } from "@shared/schema";
 import { eq, and, asc, or, desc, inArray, getTableColumns } from "drizzle-orm";
 import { db } from "./db";
+import type { PublicUser } from "./sanitizeUser";
 import { defaultTomConfig } from "./config/default-ai-follower";
 import { sql } from 'drizzle-orm/sql';
 
 export interface IStorage {
-  getUser(id: number): Promise<User | undefined>;
-  getUserByUsername(username: string): Promise<User | undefined>;
-  createUser(user: InsertUser & Partial<Pick<User, "avatarUrl" | "bio">>): Promise<User>;
-  updateUser(id: number, updates: Partial<Pick<User, "avatarUrl" | "bio">>): Promise<User>;
+  getUser(id: number): Promise<PublicUser | undefined>;
+  getUserByUsername(username: string): Promise<PublicUser | undefined>;
+  /** Only caller is the login strategy; the result must never be sent in a response. */
+  getUserCredentials(username: string): Promise<UserCredentials | undefined>;
+  createUser(user: InsertUser & Partial<Pick<User, "avatarUrl" | "bio">>): Promise<PublicUser>;
+  updateUser(id: number, updates: Partial<Pick<User, "avatarUrl" | "bio">>): Promise<PublicUser>;
   createPost(userId: number, content: string): Promise<Post>;
   getPost(id: number): Promise<Post | undefined>;
   getUserPosts(userId: number): Promise<Post[]>;
@@ -106,7 +109,7 @@ export interface IStorage {
   updateInvitationStatus(id: number, status: "accepted" | "declined"): Promise<CircleInvitation>;
   getCircleWithDetails(id: number): Promise<{
     circle: Circle;
-    owner: User;
+    owner: PublicUser;
     members: (CircleMember & { username: string })[];
     followers: (AiFollower & { muted?: boolean })[];
     collectives: AiFollowerCollective[];
@@ -177,30 +180,49 @@ export interface IStorage {
   getCircleMemberCount(circleId: number): Promise<number>;
 }
 
+/** Explicit column list for user reads; the password column is only read by getUserCredentials. */
+const publicUserColumns = {
+  id: users.id,
+  username: users.username,
+  avatarUrl: users.avatarUrl,
+  bio: users.bio,
+  createdAt: users.createdAt,
+};
+
+export type UserCredentials = { id: number; password: string };
+
 export class DatabaseStorage implements IStorage {
-  async getUser(id: number): Promise<User | undefined> {
-    const [user] = await db.select().from(users).where(eq(users.id, id));
+  async getUser(id: number): Promise<PublicUser | undefined> {
+    const [user] = await db.select(publicUserColumns).from(users).where(eq(users.id, id));
     return user;
   }
 
-  async getUserByUsername(username: string): Promise<User | undefined> {
-    const [user] = await db.select().from(users).where(eq(users.username, username));
+  async getUserByUsername(username: string): Promise<PublicUser | undefined> {
+    const [user] = await db.select(publicUserColumns).from(users).where(eq(users.username, username));
     return user;
   }
 
-  async createUser(insertUser: InsertUser & Partial<Pick<User, "avatarUrl" | "bio">>): Promise<User> {
-    const [user] = (await db.insert(users).values(insertUser).returning()) as User[];
+  async getUserCredentials(username: string): Promise<UserCredentials | undefined> {
+    const [credentials] = await db
+      .select({ id: users.id, password: users.password })
+      .from(users)
+      .where(eq(users.username, username));
+    return credentials;
+  }
+
+  async createUser(insertUser: InsertUser & Partial<Pick<User, "avatarUrl" | "bio">>): Promise<PublicUser> {
+    const [user] = await db.insert(users).values(insertUser).returning(publicUserColumns);
     return user;
   }
   
-  async updateUser(id: number, updates: Partial<Pick<User, "avatarUrl" | "bio">>): Promise<User> {
+  async updateUser(id: number, updates: Partial<Pick<User, "avatarUrl" | "bio">>): Promise<PublicUser> {
     try {
-      console.log("[Storage] Updating user:", id, "with:", updates);
-      const [updatedUser] = (await db
+      console.log("[Storage] Updating user:", id);
+      const [updatedUser] = await db
         .update(users)
         .set(updates)
         .where(eq(users.id, id))
-        .returning()) as User[];
+        .returning(publicUserColumns);
 
       console.log("[Storage] Updated user successfully");
       return updatedUser;
@@ -1299,7 +1321,7 @@ export class DatabaseStorage implements IStorage {
 
   async getCircleWithDetails(id: number): Promise<{
     circle: Circle;
-    owner: User;
+    owner: PublicUser;
     members: (CircleMember & { username: string })[];
     followers: (AiFollower & { muted?: boolean })[];
     collectives: AiFollowerCollective[];

@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { storage } from '../storage';
 import { requireAuth } from './middleware';
 import { User } from '@shared/schema';
+import { sanitizeUser } from '../sanitizeUser';
 
 const router = Router();
 
@@ -10,7 +11,6 @@ const router = Router();
  */
 router.patch('/profile', requireAuth, async (req, res) => {
   console.log("[API] PATCH /api/user/profile - Request received");
-  console.log("[API] Request body:", req.body);
   
   try {
     const updates: Partial<Pick<User, "avatarUrl" | "bio">> = {};
@@ -28,7 +28,7 @@ router.patch('/profile', requireAuth, async (req, res) => {
     const updatedUser = await storage.updateUser(req.user!.id, updates);
     console.log("[API] User profile updated successfully");
     
-    res.json(updatedUser);
+    res.json(sanitizeUser(updatedUser));
   } catch (error) {
     console.error("[API] Error updating user profile:", error);
     res.status(500).json({ message: "Failed to update user profile" });
