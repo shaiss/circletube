@@ -138,4 +138,45 @@ describe("POST /api/direct-chat/:followerId generateAIResponse args (#44)", () =
     expect(args[4]).toBe("Ada: Hey there\nUser: What's 2+2?");
     expect(args[5]).toBe(follower);
   });
+  it("evaluates calculator tags before saving the reply", async () => {
+    const userMessage = {
+      id: 201,
+      userId: 7,
+      aiFollowerId: 11,
+      content: "What's 2+2?",
+      isUserMessage: true,
+    };
+    mockGetAiFollower.mockResolvedValue(follower);
+    mockGetDirectChatMessages.mockResolvedValue([userMessage]);
+
+    let resolveSaved: () => void = () => {};
+    const replySaved = new Promise<void>((resolve) => {
+      resolveSaved = resolve;
+    });
+    mockCreateDirectChatMessage.mockImplementation(async (msg: { isUserMessage: boolean }) => {
+      if (!msg.isUserMessage) resolveSaved();
+      return msg.isUserMessage ? userMessage : { id: 202, ...msg };
+    });
+    mockGenerateAIResponse.mockResolvedValue({
+      type: "reply",
+      content: "The answer is [calc: 2+2]",
+      confidence: 0.95,
+    });
+
+    const response = await request(app)
+      .post("/api/direct-chat/11")
+      .send({ content: userMessage.content });
+    expect(response.status).toBe(201);
+
+    await replySaved;
+
+    const saved = mockCreateDirectChatMessage.mock.calls[1][0];
+    expect(saved.isUserMessage).toBe(false);
+    expect(saved.content).not.toContain("[calc");
+    expect(saved.content).toContain("4");
+    expect(saved.toolsUsed).toMatchObject({
+      used: true,
+      tools: [expect.objectContaining({ id: "calculator", usageCount: 1 })],
+    });
+  });
 });
