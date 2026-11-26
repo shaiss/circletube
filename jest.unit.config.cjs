@@ -6,6 +6,8 @@ module.exports = {
   testMatch: [
     "<rootDir>/server/test/simple.test.ts",
     "<rootDir>/server/sanitizeUser.test.ts",
+    "<rootDir>/server/test/unit/direct-chat-owner-scope.test.ts",
+    "<rootDir>/server/test/unit/follower-owner-scope.test.ts",
     "<rootDir>/server/test/unit/direct-chat-ai-args.test.ts",
     "<rootDir>/server/test/unit/generate-ai-response-history.test.ts",
   ],

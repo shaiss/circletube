@@ -12,10 +12,10 @@ router.get('/:followerId', requireAuth, async (req, res) => {
   const followerId = parseInt(req.params.followerId);
   
   try {
-    // Verify follower exists
+    // Verify the follower exists and is owned by the user
     const follower = await storage.getAiFollower(followerId);
-    if (!follower) {
-      return res.status(404).json({ message: "AI Follower not found" });
+    if (!follower || follower.userId !== req.user!.id) {
+      return res.status(404).json({ message: "AI Follower not found or you don't have permission" });
     }
     
     // Get chat history
@@ -39,10 +39,10 @@ router.post('/:followerId', requireAuth, async (req, res) => {
   const { content } = req.body;
   
   try {
-    // Verify follower exists
+    // Verify the follower exists and is owned by the user
     const follower = await storage.getAiFollower(followerId);
-    if (!follower) {
-      return res.status(404).json({ message: "AI Follower not found" });
+    if (!follower || follower.userId !== req.user!.id) {
+      return res.status(404).json({ message: "AI Follower not found or you don't have permission" });
     }
     
     // Save user message
