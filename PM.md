@@ -58,3 +58,4 @@ Circe is the PM agent who owns this charter, not the human customer.
 | 2026-09-19 | Embed Cipher RE-CLEARED `embed/public-safe-package` @ `d9379e1006795681f357884c7d6f3773be5da4d4` under `forge/` | Public-safe package only; F4 no CI |
 | 2026-09-19 | Charter customer is admiral (solo operator / human lead); Circe owns the charter as PM agent, not as customer | Corrects the embed-init log that named Circe as the customer |
 | 2026-09-20 | Circletube is the sole public product name; Agapi is retired / do not use. Scrubbed remaining product-name mentions in UI, live docs, README, the forge brief template, and the NFT fallback host | Admiral ask |
+| 2026-10-04 | In-repo Railway/Railpack scaffold landed (`railway.toml`, PORT, `docs/deploy-railway.md`); no live service | B1 config only — canonical project/URL still open |

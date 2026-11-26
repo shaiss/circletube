@@ -7,9 +7,14 @@
 - Machine: `forge/` (public-safe embed). Lineage: root `forge.conf`.
 - Agent rules: `docs/agent_rules/` via `AGENTS.md`.
 - Confirm state: `npm run check` (`tsc`). Server tests are archived (`.archive-server-tests/`); not a green gate.
-- Realtime needs Railway (or equivalent) + WS; Vercel-only will not carry the scheduler.
+- Realtime needs Railway (or equivalent) + WS; Vercel-only will not carry the scheduler. In-repo scaffold: `docs/deploy-railway.md`. Canonical Railway project/URL is still unset.
 
 ## Log
+
+### 2026-10-04 — Railway process-host scaffold (B1 config)
+- **Did:** Listen port honors `process.env.PORT` with 5000 fallback on `0.0.0.0`; dropped `reusePort` and the 5001 fallback (would miss Railway's proxy). Added `railway.toml` (Railpack: `npm run build` / `npm start`, healthcheck `/api/health`) and `nixpacks.toml` fallback (Node 22). Documented create-service steps and env **names** in `docs/deploy-railway.md`. `engines.node` is `>=20`. Did not create a Railway project, commit secrets, or add CI.
+- **Decided (and why):** Charter N1/B1 — Vercel-only cannot host `/ws` + `ResponseScheduler`. Railpack is Railway's current builder; Nixpacks file is only a fallback. Sessions remain in-memory (`memorystore`); `DATABASE_URL` is still required by `server/db.ts`.
+- **Left for next session:** A human must create the Railway service, set env values, provision Postgres, and record the canonical URL. BRIEF open question unchanged until then.
 
 ### 2026-09-20 — product-name scrub
 - **Did:** Replaced the retired product name with Circletube in UI copy, live `docs/agent_rules/`, README, the forge brief template, and the NFT fallback host. Charter N6 now says Circletube is the sole public name.
