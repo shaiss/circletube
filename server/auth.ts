@@ -5,13 +5,15 @@ import session from "express-session";
 import { scrypt, randomBytes, timingSafeEqual } from "crypto";
 import { promisify } from "util";
 import { storage } from "./storage";
-import { User as SelectUser, registerUserSchema } from "@shared/schema";
+import { registerUserSchema } from "@shared/schema";
+import { sanitizeUser, type PublicUser } from "./sanitizeUser";
 import { sessionStore } from "./sessionStore";
 import { resolveSessionSecret } from "./sessionSecret";
 
 declare global {
   namespace Express {
-    interface User extends SelectUser {}
+    // req.user is always a PublicUser; credentials are never attached to the request.
+    interface User extends PublicUser {}
   }
 }
 
@@ -75,11 +77,15 @@ export async function setupAuth(app: Express) {
   passport.use(
     new LocalStrategy(async (username, password, done) => {
       try {
-        const user = await storage.getUserByUsername(username);
-        if (!user || !(await comparePasswords(password, user.password))) {
+        const credentials = await storage.getUserCredentials(username);
+        if (!credentials || !(await comparePasswords(password, credentials.password))) {
           return done(null, false);
         }
-        return done(null, user);
+        const user = await storage.getUser(credentials.id);
+        if (!user) {
+          return done(null, false);
+        }
+        return done(null, sanitizeUser(user));
       } catch (error) {
         return done(error);
       }
@@ -90,7 +96,7 @@ export async function setupAuth(app: Express) {
   passport.deserializeUser(async (id: number, done) => {
     try {
       const user = await storage.getUser(id);
-      done(null, user);
+      done(null, user ? sanitizeUser(user) : false);
     } catch (error) {
       done(error);
     }
@@ -117,10 +123,9 @@ export async function setupAuth(app: Express) {
         ...(bio !== undefined ? { bio } : {}),
       });
 
-      // Omit hash from JSON; full sanitizeUser across auth routes is tracked in #35.
-      const { password: _passwordHash, ...safeUser } = user;
+      const safeUser = sanitizeUser(user);
 
-      req.login(user, (err) => {
+      req.login(safeUser, (err) => {
         if (err) return next(err);
         res.status(201).json(safeUser);
       });
@@ -130,7 +135,7 @@ export async function setupAuth(app: Express) {
   });
 
   app.post("/api/login", passport.authenticate("local"), (req, res) => {
-    res.status(200).json(req.user);
+    res.status(200).json(sanitizeUser(req.user!));
   });
 
   app.post("/api/logout", (req, res, next) => {
@@ -156,6 +161,6 @@ export async function setupAuth(app: Express) {
 
   app.get("/api/user", (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
-    res.json(req.user);
+    res.json(sanitizeUser(req.user));
   });
 }
