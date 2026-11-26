@@ -107,6 +107,37 @@ describe("direct chat scoped to the follower's owner", () => {
     expect(mockGetDirectChatMessages).not.toHaveBeenCalled();
   });
 
+  describe.each([
+    ["does not exist", undefined],
+    ["has no owner set", { ...ownedFollower, userId: null }],
+  ])("when the follower %s", (_label, follower) => {
+    it("GET returns the same 404 and does not read messages", async () => {
+      mockGetAiFollower.mockResolvedValue(follower);
+
+      const response = await request(app).get("/api/direct-chat/11");
+
+      expect(response.status).toBe(404);
+      expect(response.body).toEqual(notFoundBody);
+      expect(mockGetAiFollower).toHaveBeenCalledWith(11);
+      expect(mockGetDirectChatMessages).not.toHaveBeenCalled();
+    });
+
+    it("POST returns the same 404 and does not create a message or generate a response", async () => {
+      mockGetAiFollower.mockResolvedValue(follower);
+
+      const response = await request(app)
+        .post("/api/direct-chat/11")
+        .send({ content: "Hello" });
+
+      expect(response.status).toBe(404);
+      expect(response.body).toEqual(notFoundBody);
+      expect(mockGetAiFollower).toHaveBeenCalledWith(11);
+      expect(mockCreateDirectChatMessage).not.toHaveBeenCalled();
+      expect(mockGenerateAIResponse).not.toHaveBeenCalled();
+      expect(mockGetDirectChatMessages).not.toHaveBeenCalled();
+    });
+  });
+
   it("GET returns 200 when the follower is owned by the user", async () => {
     const messages = [
       {
