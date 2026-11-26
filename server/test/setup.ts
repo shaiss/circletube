@@ -12,13 +12,19 @@ type OpenAIResponse = {
   }>;
 };
 
+type ChatCompletionArgs = {
+  messages: Array<{ content: string }>;
+};
+
 // Mock OpenAI for testing
 jest.mock('openai', () => {
   return {
     OpenAI: jest.fn().mockImplementation(() => ({
       chat: {
         completions: {
-          create: jest.fn().mockImplementation(({ messages }: { messages: any[] }): Promise<OpenAIResponse> => {
+          // Untyped args: @jest/globals mockImplementation expects UnknownFunction
+          create: jest.fn().mockImplementation((args: unknown): Promise<OpenAIResponse> => {
+            const { messages } = args as ChatCompletionArgs;
             // Different responses based on the system message content
             const isBackgroundGeneration = messages[0].content.includes('creative AI character developer');
 

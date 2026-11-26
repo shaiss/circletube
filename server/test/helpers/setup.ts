@@ -83,8 +83,9 @@ export async function setupTestApp(): Promise<{ app: Express, server: Server }> 
   // Set up app context and dependency injection
   app.use((req, res, next) => {
     // Inject dependencies into request
+    // Cast via unknown: MockStorage implements IStorage; Express Request.context typing is loose in tests
     req.context = {
-      storage: mockStorage as IStorage,
+      storage: mockStorage as unknown as IStorage,
       openai: mockOpenAI
     };
     next();
@@ -130,17 +131,7 @@ export async function closeTestApp(server: Server): Promise<void> {
  * Reset application state between tests
  */
 export function resetAppState(): void {
-  // Reset mock storage to empty state
-  mockStorage.users = [];
-  mockStorage.followers = [];
-  mockStorage.posts = [];
-  mockStorage.circles = [];
-  mockStorage.circleMembers = [];
-  mockStorage.labs = [];
-  mockStorage.followerCollectives = [];
-  mockStorage.notifications = [];
-  mockStorage.directMessages = [];
-  mockStorage.followerResponses = [];
+  mockStorage.clear();
 }
 
 /**
