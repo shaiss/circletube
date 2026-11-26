@@ -12,6 +12,7 @@ import { Strategy as LocalStrategy } from 'passport-local';
 import { OpenAI } from 'openai';
 
 import { mockStorage } from './mock-storage';
+import { sanitizeUser } from '../../sanitizeUser';
 import { IStorage } from '../../../server/storage';
 
 // In-memory session store for tests
@@ -57,7 +58,7 @@ export async function setupTestApp(): Promise<{ app: Express, server: Server }> 
         return done(null, false, { message: 'Incorrect password' });
       }
       
-      return done(null, user);
+      return done(null, sanitizeUser(user));
     } catch (error) {
       return done(error);
     }
@@ -71,7 +72,7 @@ export async function setupTestApp(): Promise<{ app: Express, server: Server }> 
   passport.deserializeUser(async (id: number, done) => {
     try {
       const user = await mockStorage.getUserById(id);
-      done(null, user);
+      done(null, user ? sanitizeUser(user) : false);
     } catch (error) {
       done(error);
     }

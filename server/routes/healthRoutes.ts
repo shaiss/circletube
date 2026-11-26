@@ -35,7 +35,8 @@ router.get('/details', async (_req, res) => {
       health.services.database = 'ok';
     } catch (error) {
       health.services.database = 'error';
-      health.details = { ...health.details, databaseError: (error as Error).message };
+      console.error('[Health] database check failed:', error);
+      health.details = { ...health.details, databaseError: 'unavailable' };
       health.status = 'degraded';
     }
 
@@ -45,7 +46,8 @@ router.get('/details', async (_req, res) => {
       health.services.responseScheduler = scheduler ? 'ok' : 'error';
     } catch (error) {
       health.services.responseScheduler = 'error';
-      health.details = { ...health.details, schedulerError: (error as Error).message };
+      console.error('[Health] scheduler check failed:', error);
+      health.details = { ...health.details, schedulerError: 'unavailable' };
       health.status = 'degraded';
     }
 
@@ -55,7 +57,8 @@ router.get('/details', async (_req, res) => {
       health.services.threadManager = ThreadManager ? 'ok' : 'error';
     } catch (error) {
       health.services.threadManager = 'error';
-      health.details = { ...health.details, threadManagerError: (error as Error).message };
+      console.error('[Health] threadManager check failed:', error);
+      health.details = { ...health.details, threadManagerError: 'unavailable' };
       health.status = 'degraded';
     }
     
@@ -65,7 +68,8 @@ router.get('/details', async (_req, res) => {
       health.services.contextManager = contextManager ? 'ok' : 'error';
     } catch (error) {
       health.services.contextManager = 'error';
-      health.details = { ...health.details, contextManagerError: (error as Error).message };
+      console.error('[Health] contextManager check failed:', error);
+      health.details = { ...health.details, contextManagerError: 'unavailable' };
       health.status = 'degraded';
     }
 
@@ -76,10 +80,11 @@ router.get('/details', async (_req, res) => {
       res.status(500).json(health);
     }
   } catch (error) {
+    console.error('[Health] details check failed:', error);
     res.status(500).json({
       status: 'error',
       timestamp: new Date().toISOString(),
-      error: (error as Error).message
+      error: 'Health check failed'
     });
   }
 });

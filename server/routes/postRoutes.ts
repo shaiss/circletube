@@ -149,7 +149,6 @@ router.get('/:id', requireAuth, async (req, res) => {
  */
 router.post('/', requireAuth, async (req, res) => {
   try {
-    console.log("[Post Route] Received request body:", JSON.stringify(req.body));
     // Check if the request body is a stringified JSON
     let content, circleId, labId, labExperiment, targetRole;
     

@@ -8,6 +8,7 @@ import {
   User, Post, AiFollower, AiInteraction, Circle, CircleMember,
   Lab, LabCircle, LabCircleRole, AiFollowerCollective, Notification
 } from '@shared/schema';
+import { sanitizeUser, type PublicUser } from '../../sanitizeUser';
 import { createTestUser, createTestFollower, createTestPost, createTestCircle } from './test-factories';
 
 /**
@@ -37,13 +38,13 @@ export class MockStorage implements IStorage {
   }
 
   // User methods
-  async createUser(userData: Omit<User, 'id'>): Promise<User> {
+  async createUser(userData: Omit<User, 'id'>): Promise<PublicUser> {
     const newUser: User = {
       id: this.users.length + 1,
       ...userData
     };
     this.users.push(newUser);
-    return newUser;
+    return sanitizeUser(newUser);
   }
 
   async getUserById(id: number): Promise<User | null> {

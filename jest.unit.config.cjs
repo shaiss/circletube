@@ -10,6 +10,9 @@ module.exports = {
     "<rootDir>/server/test/unit/follower-owner-scope.test.ts",
     "<rootDir>/server/test/unit/direct-chat-ai-args.test.ts",
     "<rootDir>/server/test/unit/generate-ai-response-history.test.ts",
+    "<rootDir>/server/test/unit/auth-user-response-fields.test.ts",
+    "<rootDir>/server/test/unit/circle-post-user-fields.test.ts",
+    "<rootDir>/server/test/unit/public-user-guard.test.ts",
   ],
   moduleNameMapper: {
     "^@shared/(.*)$": "<rootDir>/shared/$1",
