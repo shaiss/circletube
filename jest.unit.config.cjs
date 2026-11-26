@@ -13,6 +13,7 @@ module.exports = {
     "<rootDir>/server/test/unit/auth-user-response-fields.test.ts",
     "<rootDir>/server/test/unit/circle-post-user-fields.test.ts",
     "<rootDir>/server/test/unit/public-user-guard.test.ts",
+    "<rootDir>/server/test/unit/api-error-handler.test.ts",
   ],
   moduleNameMapper: {
     "^@shared/(.*)$": "<rootDir>/shared/$1",

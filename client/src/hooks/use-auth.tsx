@@ -4,7 +4,10 @@ import {
   useMutation,
   UseMutationResult,
 } from "@tanstack/react-query";
-import { insertUserSchema, User as SelectUser, InsertUser } from "@shared/schema";
+import { insertUserSchema, User, InsertUser } from "@shared/schema";
+
+/** The signed-in user as the API returns it (no password field). */
+type SelectUser = Omit<User, "password">;
 import { getQueryFn, apiRequest, queryClient } from "../lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 
