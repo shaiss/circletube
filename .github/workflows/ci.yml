@@ -19,9 +19,11 @@ on:
 permissions:
   contents: read
 
+# PR runs share one group per branch and cancel superseded runs. Each push to
+# main gets its own group (run_id), so no main run is ever queued out or
+# cancelled and every pushed commit is scanned.
 concurrency:
-  group: ci-${{ github.workflow }}-${{ github.ref }}
-  # Cancel superseded PR runs only; every push to main runs to completion.
+  group: ${{ github.event_name == 'pull_request' && format('ci-pr-{0}', github.ref) || format('ci-push-{0}', github.run_id) }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
@@ -131,24 +133,43 @@ jobs:
           BEFORE_SHA: ${{ github.event.before }}
         run: |
           set -euo pipefail
-          empty_tree="$(git hash-object -t tree /dev/null)"
           if [ "$EVENT" = "pull_request" ]; then
             range="${BASE_SHA}..${HEAD_SHA}"
           elif [ -n "${BEFORE_SHA:-}" ] && ! printf '%s' "$BEFORE_SHA" | grep -qE '^0{40}$' \
                && git rev-parse -q --verify "${BEFORE_SHA}^{commit}" >/dev/null 2>&1; then
             range="${BEFORE_SHA}..${HEAD_SHA}"
           else
-            range="${empty_tree}..${HEAD_SHA}"
+            range="${HEAD_SHA}"   # first push or unknown before: full history
           fi
-          # On PRs, use the base branch's config so a PR cannot loosen its own scan.
-          config_arg=()
-          if [ "$EVENT" = "pull_request" ] && git show "${BASE_SHA}:.gitleaks.toml" > "$RUNNER_TEMP/gitleaks.toml" 2>/dev/null; then
-            config_arg=(--config "$RUNNER_TEMP/gitleaks.toml")
-          elif [ "$EVENT" != "pull_request" ] && [ -f .gitleaks.toml ]; then
-            config_arg=(--config .gitleaks.toml)
+
+          # Scan settings come from a trusted source only. On PRs that is the
+          # base commit (a PR cannot loosen its own scan); on pushes to main it
+          # is the pushed main commit itself. With no config file, use the
+          # built-in rules explicitly so gitleaks never picks one up from the
+          # checkout.
+          cfg="$RUNNER_TEMP/gitleaks.toml"
+          ign_dir="$RUNNER_TEMP/gitleaks-ignore"
+          mkdir -p "$ign_dir"
+          if [ "$EVENT" = "pull_request" ]; then
+            src="$BASE_SHA"
+          else
+            src="$HEAD_SHA"
           fi
-          echo "scanning $range"
-          "$RUNNER_TEMP/gitleaks" git --no-banner --redact "${config_arg[@]}" --log-opts="$range" .
+          if ! git show "${src}:.gitleaks.toml" > "$cfg" 2>/dev/null; then
+            printf '[extend]\nuseDefault = true\n' > "$cfg"
+          fi
+          git show "${src}:.gitleaksignore" > "$ign_dir/.gitleaksignore" 2>/dev/null || rm -f "$ign_dir/.gitleaksignore"
+          # Remove the checkout's own copies so they cannot be discovered.
+          rm -f .gitleaks.toml .gitleaksignore
+
+          echo "scanning $range (settings from ${src})"
+          # --diff-merges=first-parent: include merge-commit changes.
+          # --ignore-gitleaks-allow: inline allow comments do not suppress findings.
+          "$RUNNER_TEMP/gitleaks" git --no-banner --redact \
+            --config "$cfg" \
+            --gitleaks-ignore-path "$ign_dir" \
+            --ignore-gitleaks-allow \
+            --log-opts="--diff-merges=first-parent $range" .
 
   ci-ok:
     name: CI OK
