@@ -23,12 +23,18 @@ The project started as a Replit prototype and is being brought up to current eng
 
 ## Local development
 
-Requirements: Node.js 20 or later (`.nvmrc` pins 22), a PostgreSQL database, and an OpenAI API key if you want AI replies.
+Requirements: Node.js 20 or later (`.nvmrc` pins 22), a Neon Postgres database, and an OpenAI API key.
+
+- **Database:** the server connects through Neon's serverless driver over WebSocket (`server/db.ts`). Use a Neon database (a free dev branch works). A plain local PostgreSQL will not accept these connections unless you run a Neon-compatible WebSocket proxy in front of it.
+- **OpenAI key:** the OpenAI client is created when the server starts, so `OPENAI_API_KEY` must be set for the server to boot.
+- **Environment:** the scripts do not read `.env` on their own. Load it into your shell first, as below.
 
 ```bash
 nvm use                # optional, reads .nvmrc
 npm ci
 cp .env.example .env   # then fill in values locally; never commit .env
+                       # generate SESSION_SECRET with e.g. `openssl rand -hex 32`
+set -a; . ./.env; set +a   # export .env into this shell
 npm run db:push        # create/update tables from shared/schema.ts
 npm run dev            # http://localhost:5000 (API, WebSocket and Vite on one port)
 ```
@@ -49,14 +55,14 @@ Names only. Values live in your local `.env` or in the host's secret store, neve
 
 | Name | Needed for | Notes |
 |---|---|---|
-| `DATABASE_URL` | Server | PostgreSQL connection string. Also backs production sessions |
-| `SESSION_SECRET` | Server | Required when `NODE_ENV=production`. Dev falls back with a warning |
-| `OPENAI_API_KEY` | Server | AI follower replies. The server boots without it; replies fail |
+| `DATABASE_URL` | Server | Neon Postgres connection string. Also backs production sessions |
+| `SESSION_SECRET` | Server | Generate one locally (e.g. `openssl rand -hex 32`). Production refuses to start with it empty; dev falls back with a warning |
+| `OPENAI_API_KEY` | Server | Required to start the server (the client is created at startup); used for AI follower replies |
 | `PORT` | Server | Injected by the host; defaults to 5000 |
 | `NODE_ENV` | Server | `production` under `npm start` |
 | `WS_ALLOWED_ORIGINS` | Server | Comma-separated origins allowed to open `/ws` (also reads `APP_ORIGIN`, `PUBLIC_APP_URL`) |
 | `BASE_URL` | Server | External URLs in NFT metadata |
-| `NFT_MINT_ENABLED` | Server | Must be exactly `true` (plus a signing key) to turn NFT routes on. Leave unset |
+| `NFT_MINT_ENABLED` | Server | NFT routes are on only when this is exactly `true` **and** `ETH_PRIVATE_KEY` is set. Leave both unset |
 | `ETH_PROVIDER_URL` | Server | Chain RPC for NFT features. Optional |
 
 ## Tests
@@ -66,14 +72,12 @@ npx jest -c jest.unit.config.cjs --ci -i   # server unit suites (server/test/uni
 npm run check                              # type check
 ```
 
-The type check still reports known errors that are being paid down in small PRs; CI fails only if the count goes up. Older suites under `server/test/` outside `unit/` are not part of the gate.
+The type check still reports known errors that are being paid down in small PRs; CI fails only if the count goes up. CI runs exactly the suites listed in `jest.unit.config.cjs` (`testMatch`), mostly under `server/test/unit/`; other files under `server/test/` are not run.
 
 ## Deploy shape
 
-Circletube needs a long-running Node process for the WebSocket server and the response scheduler, so it is split:
-
-- **API + WebSocket + scheduler:** one Node service on Railway (`railway.toml`, `docs/deploy-railway.md`).
-- **Frontend:** the static Vite build on Vercel, with preview builds on pull requests. Until a non-production API exists, previews are UI-only.
+- **Frontend:** the static Vite build on Vercel, with preview builds on pull requests. Previews are UI-only: there is no hosted API yet, so pages that load data or sign in show errors.
+- **API, WebSocket server and response scheduler:** hosting is not decided yet. They need a long-running process, so they are not part of the Vercel build; the API hosting design comes later. `railway.toml`, `nixpacks.toml` and `docs/deploy-railway.md` are earlier notes and are not in use.
 
 No production deployment exists yet.
 
@@ -96,7 +100,7 @@ Changes land through pull requests into `main`, squash-merged after CI passes, r
 
 ## Docs
 
-- [Deploying on Railway](docs/deploy-railway.md)
+- [Railway notes (not in use)](docs/deploy-railway.md)
 - [API reference](docs/agent_rules/api.md)
 - [Database](docs/agent_rules/database.md)
 - [Flows](docs/agent_rules/flows.md)
@@ -104,3 +108,7 @@ Changes land through pull requests into `main`, squash-merged after CI passes, r
 - [Testing notes](docs/agent_rules/TESTING.md)
 - Project brief and log: [BRIEF.md](BRIEF.md), [PM.md](PM.md), [NOTES.md](NOTES.md)
 - For AI coding assistants: [AGENTS.md](AGENTS.md), [agent_guidelines.md](agent_guidelines.md)
+
+## License
+
+MIT. See [LICENSE](LICENSE).
