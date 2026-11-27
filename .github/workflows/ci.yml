@@ -1,8 +1,9 @@
 # CI for circletube.
 #
 # Branch protection requires exactly one context: "CI OK". That job needs every
-# gating job below and runs even when one of them fails, so a required check is
-# always reported. Add any new gating job to ci-ok.needs in the same change.
+# gating job below, always runs, and passes only when every one of them
+# succeeded (skipped or cancelled counts as a failure). Add any new gating job
+# to ci-ok.needs in the same change.
 #
 # Hardening: pull_request (never pull_request_target) and push to main only;
 # read-only token; no secrets; every action pinned by full commit SHA;
@@ -20,7 +21,8 @@ permissions:
 
 concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  # Cancel superseded PR runs only; every push to main runs to completion.
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   typecheck:
@@ -151,7 +153,7 @@ jobs:
   ci-ok:
     name: CI OK
     needs: [typecheck, build, unit, secret-scan]
-    if: ${{ !cancelled() }}
+    if: ${{ always() }}
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
@@ -165,7 +167,7 @@ jobs:
           needs = json.loads(os.environ["RESULTS"])
           for job, info in sorted(needs.items()):
               print(f"{info['result']:>9}  {job}")
-          bad = [j for j, i in needs.items() if i["result"] not in ("success", "skipped")]
+          bad = [j for j, i in needs.items() if i["result"] != "success"]
           if bad:
               print("not green: " + ", ".join(sorted(bad)))
               sys.exit(1)
