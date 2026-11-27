@@ -1,235 +1,106 @@
 # Circletube
 
-Circletube is an advanced AI-powered social network platform that enables intelligent, context-aware interactions between users and AI-generated followers through dynamic conversation threads. The platform revolutionizes social networking by combining human connections with AI-driven interactions in meaningful, categorized circles.
+Circletube is an AI-powered social app. You organize people into circles, post into them, and AI followers with their own personalities reply in context on a live timeline. Replies are delivered over WebSocket and some are scheduled to arrive over time, the way a real audience trickles in.
 
-## 🌟 Key Features
+The project started as a Replit prototype and is being brought up to current engineering standards. It is pre-launch.
 
-### Circle Management
-- **Smart Circles**: Create and manage private or shared social circles
-- **Dynamic Categories**: Enhanced categorization system for better circle organization
-- **Access Control**: Granular privacy settings for each circle
-- **Member Management**: Add, remove, and manage circle participants
+## Status
 
-![Circle Management Interface](assets/circle-management.png)
-*Circle creation and management interface with customizable settings*
+| Area | State |
+|---|---|
+| Circles, posts, AI followers, threads, direct chat | Working core |
+| Labs (experiments on AI follower responses) | Experimental. Planned to sit behind a feature flag, off by default |
+| Auth | Username/password sessions today. Migration to Clerk is planned |
+| NFT minting | Off unless explicitly enabled on the server (`NFT_MINT_ENABLED`) |
+| Hosting | Not deployed yet. Target shape is below |
 
-### AI-Powered Interactions
-- **Intelligent Followers**: AI-generated followers with distinct personalities
-- **Context-Aware Conversations**: Dynamic conversation threads that maintain context
-- **Adaptive Responses**: AI followers learn and adapt to user interactions
-- **Real-time Engagement**: Immediate, contextually relevant responses
+## Stack
 
-![AI Followers Management](assets/ai-followers.png)
-*Create and manage AI followers with unique personalities and interaction styles*
+- **Client:** React 18, Vite 5, Tailwind CSS, shadcn/ui (Radix), TanStack Query, wouter
+- **Server:** Node.js, Express 4, `ws` WebSocket server, an in-process response scheduler, OpenAI SDK
+- **Data:** PostgreSQL with Drizzle ORM and Zod schemas (`shared/schema.ts`)
+- **Language:** TypeScript throughout
 
-![Dynamic Conversations](assets/conversation-threads.png)
-*Context-aware conversation threads with AI followers*
+## Local development
 
-### User Experience
-- **Intuitive Interface**: Clean, modern UI built with Shadcn components
-- **Responsive Design**: Seamless experience across all devices
-- **Real-time Updates**: WebSocket integration for live interactions
-- **Rich Content Support**: Support for various content types in conversations
+Requirements: Node.js 20 or later (`.nvmrc` pins 22), a PostgreSQL database, and an OpenAI API key if you want AI replies.
 
-## 🛠️ Technology Stack
-
-### Frontend
-- React with TypeScript
-- Shadcn UI for component styling
-- TanStack Query for data fetching
-- WebSocket for real-time communications
-- Wouter for routing
-- date-fns for timestamp handling
-
-### Backend
-- Express.js server
-- TypeScript
-- OpenAI API integration
-- WebSocket server for real-time features
-- Passport.js authentication
-
-### Database & ORM
-- PostgreSQL database
-- Drizzle ORM with Zod validation
-- Connection pooling for optimal performance
-
-## 🚀 Getting Started
-
-### Prerequisites
-- Node.js (v18 or higher)
-- PostgreSQL database
-- OpenAI API key
-
-### Environment Variables
-```
-DATABASE_URL=postgresql://user:password@host:port/database
-OPENAI_API_KEY=your_openai_api_key
-SESSION_SECRET=your_session_secret
-```
-
-`SESSION_SECRET` is required when `NODE_ENV=production` (including `npm start`). Local development may omit it and will use a plaintext fallback with a warning; do not rely on that fallback in any deploy.
-
-### Session store
-- **Production** (`NODE_ENV=production`, e.g. `npm start` on Railway): `connect-pg-simple` persists sessions in Postgres via `DATABASE_URL`, so restarts do not drop logins. The store creates the default `session` table on first use if it is missing (`createTableIfMissing`; schema matches `node_modules/connect-pg-simple/table.sql`). No separate Drizzle migration is required for that table.
-- **Local / dev** (`npm run dev`): in-memory `memorystore` (same easy path as before). App data still needs `DATABASE_URL` and `npm run db:push`.
-- Env **names** only: `DATABASE_URL`, `SESSION_SECRET`. Never commit secret values. See `docs/deploy-railway.md` for Railway notes.
-
-### Installation
-1. Clone the repository
-2. Install dependencies:
 ```bash
-npm install
+nvm use                # optional, reads .nvmrc
+npm ci
+cp .env.example .env   # then fill in values locally; never commit .env
+npm run db:push        # create/update tables from shared/schema.ts
+npm run dev            # http://localhost:5000 (API, WebSocket and Vite on one port)
 ```
-3. Set up the database:
+
+### Scripts
+
+| Script | What it does |
+|---|---|
+| `npm run dev` | Express server with Vite middleware for the client, on port 5000 |
+| `npm run build` | Vite builds the client to `dist/public`; esbuild bundles the server to `dist/index.js` |
+| `npm start` | Runs the production build (`NODE_ENV=production`) |
+| `npm run check` | TypeScript type check (`tsc`) |
+| `npm run db:push` | Push the Drizzle schema to `DATABASE_URL` |
+
+## Environment variables
+
+Names only. Values live in your local `.env` or in the host's secret store, never in this repo. See `.env.example`.
+
+| Name | Needed for | Notes |
+|---|---|---|
+| `DATABASE_URL` | Server | PostgreSQL connection string. Also backs production sessions |
+| `SESSION_SECRET` | Server | Required when `NODE_ENV=production`. Dev falls back with a warning |
+| `OPENAI_API_KEY` | Server | AI follower replies. The server boots without it; replies fail |
+| `PORT` | Server | Injected by the host; defaults to 5000 |
+| `NODE_ENV` | Server | `production` under `npm start` |
+| `WS_ALLOWED_ORIGINS` | Server | Comma-separated origins allowed to open `/ws` (also reads `APP_ORIGIN`, `PUBLIC_APP_URL`) |
+| `BASE_URL` | Server | External URLs in NFT metadata |
+| `NFT_MINT_ENABLED` | Server | Must be exactly `true` (plus a signing key) to turn NFT routes on. Leave unset |
+| `ETH_PROVIDER_URL` | Server | Chain RPC for NFT features. Optional |
+
+## Tests
+
 ```bash
-npm run db:push
-```
-4. Start the development server:
-```bash
-npm run dev
+npx jest -c jest.unit.config.cjs --ci -i   # server unit suites (server/test/unit/)
+npm run check                              # type check
 ```
 
-## 🏗️ Architecture Overview
+The type check still reports known errors that are being paid down in small PRs; CI fails only if the count goes up. Older suites under `server/test/` outside `unit/` are not part of the gate.
 
-### Frontend Architecture
-- Component-based structure with shared UI components
-- Centralized state management using React Query
-- Real-time updates via WebSocket integration
-- Protected routes with authentication checks
+## Deploy shape
 
-### Backend Architecture
-- RESTful API endpoints for data operations
-- WebSocket server for real-time features
-- Context management for AI conversations
-- Session-based authentication
+Circletube needs a long-running Node process for the WebSocket server and the response scheduler, so it is split:
 
-### Data Flow
-1. Frontend components make API requests using React Query
-2. Backend validates requests and manages business logic
-3. Database operations handled through Drizzle ORM
-4. Real-time updates propagated via WebSocket connections
+- **API + WebSocket + scheduler:** one Node service on Railway (`railway.toml`, `docs/deploy-railway.md`).
+- **Frontend:** the static Vite build on Vercel, with preview builds on pull requests. Until a non-production API exists, previews are UI-only.
 
-### Key Process Flows
+No production deployment exists yet.
 
-#### Circle Sharing Flow
-```mermaid
-sequenceDiagram
-    participant U as User
-    participant API as API Server
-    participant DB as Database
-    participant N as Notification System
+## Project layout
 
-    U->>API: POST /api/circles/{id}/share
-    Note over U,API: Share request with user IDs
-    API->>DB: Check circle ownership
-    API->>DB: Verify users exist
-    API->>DB: Create share records
-    API->>N: Send share notifications
-    N-->>U: Push notifications
-    API-->>U: 200 OK with share status
+```
+client/        React app (Vite root)
+server/        Express API, WebSocket server, scheduler, storage
+shared/        Drizzle schema and shared types
+contracts/     Solidity contract used by the NFT feature
+docs/          Deploy guide and agent rules (docs/agent_rules/)
+scripts/       One-off maintenance scripts
+forge/         Embedded agent workflow package (subtree; edit upstream)
+icons/, public/ Static assets
 ```
 
-#### User Invitation Flow
-```mermaid
-sequenceDiagram
-    participant U1 as Inviting User
-    participant API as API Server
-    participant DB as Database
-    participant U2 as Invited User
-    participant Email as Email Service
+## Contributing
 
-    U1->>API: POST /api/circles/{id}/invite
-    Note over U1,API: Invitation with email/username
-    API->>DB: Validate circle membership
-    API->>DB: Create invitation record
-    API->>Email: Send invitation email
-    Email-->>U2: Receive invitation
-    U2->>API: GET /api/invitations/{token}
-    API->>DB: Verify invitation token
-    API->>DB: Add user to circle
-    API-->>U2: 200 OK + Circle details
-```
+Changes land through pull requests into `main`, squash-merged after CI passes, review comments are resolved and reviewers sign off. See [CONTRIBUTING.md](CONTRIBUTING.md). To report a security concern, see [SECURITY.md](SECURITY.md).
 
-#### Delayed AI Follower Posting Flow
-```mermaid
-graph TD
-    A[User Creates Post] -->|POST /api/posts| B[API Server]
-    B -->|Store Post| C[Database]
-    B -->|Queue Response Task| D[Response Scheduler]
-    D -->|Check AI Context| E{Context Manager}
-    E -->|Get Post History| F[Thread Manager]
-    F -->|Generate Response| G[OpenAI API]
-    G -->|Process Response| H[Response Scheduler]
-    H -->|Random Delay 1-5min| I[Create AI Response]
-    I -->|Store Response| C
-    I -->|Notify User| J[User Interface]
-```
+## Docs
 
-#### AI Response Decision Logic
-```mermaid
-flowchart TD
-    A[New Post/Comment] -->|Check Relevance| B{Context Manager}
-    B -->|Get AI Profile| C[Load AI Personality]
-    B -->|Get Thread History| D[Load Previous Interactions]
-    B -->|Get User Context| E[Load User Preferences]
-    
-    C & D & E -->|Analyze| F{Should Respond?}
-    
-    F -->|Yes| G[Calculate Response Type]
-    F -->|No| H[End Process]
-    
-    G -->|Comment| I[Generate Comment]
-    G -->|Question| J[Generate Question]
-    G -->|Reaction| K[Generate Reaction]
-    
-    I & J & K -->|Queue Response| L[Response Scheduler]
-```
-
-For additional details on these flows and sequence diagrams, see our [Flow Documentation](docs/flows.md).
-
-## 🔐 Security Features
-- Session-based authentication
-- CSRF protection
-- Input validation using Zod schemas
-- Secure password hashing
-- Rate limiting on API endpoints
-
-## 📚 Documentation
-
-### API Documentation
-Our [API Documentation](docs/api.md) provides comprehensive details about:
-- Authentication endpoints
-- Posts and interactions
-- AI follower management 
-- Circle operations
-- Error handling
-- Rate limiting
-
-### Database Schema
-The [Database Schema](docs/database.md) documentation covers:
-- Complete entity relationships
-- Table structures
-- Field descriptions
-- Data relationships
-- Schema diagrams
-
-### Process Flows
-The [Flow Documentation](docs/flows.md) illustrates:
-- Circle sharing process
-- User invitation flow
-- AI posting mechanisms
-- Response decision logic
-
-## 🤝 Contributing
-Contributions are welcome! Please read our contributing guidelines for details on our code of conduct and the process for submitting pull requests.
-
-## 🤖 For AI Assistants
-AI coding assistants should refer to [agent_guidelines.md](agent_guidelines.md) and [AGENTS.md](AGENTS.md) for guidance on navigating this codebase. This file provides:
-- Directory priorities and which folders to avoid
-- Documentation hierarchy
-- Special considerations for database operations and API structure
-
-Project charter / brief / engineering log live at [BRIEF.md](BRIEF.md), [PM.md](PM.md), and [NOTES.md](NOTES.md). The embedded forger machine (public-safe package) is under [forge/](forge/) — see that tree rather than duplicating it here.
-
-## 📄 License
-This project is licensed under the MIT License - see the LICENSE file for details.
+- [Deploying on Railway](docs/deploy-railway.md)
+- [API reference](docs/agent_rules/api.md)
+- [Database](docs/agent_rules/database.md)
+- [Flows](docs/agent_rules/flows.md)
+- [AI follower response logic](docs/agent_rules/ai-follower-response-logic.md)
+- [Testing notes](docs/agent_rules/TESTING.md)
+- Project brief and log: [BRIEF.md](BRIEF.md), [PM.md](PM.md), [NOTES.md](NOTES.md)
+- For AI coding assistants: [AGENTS.md](AGENTS.md), [agent_guidelines.md](agent_guidelines.md)
