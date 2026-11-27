@@ -19,6 +19,9 @@ build. Where they will be hosted is not decided yet; that design comes later.
   deploy decision.
 - Defines no functions and no environment variables. Vercel holds no server
   secrets.
+- Turns off Git-triggered deployments from `main`
+  (`git.deploymentEnabled`). Pull request and other branch previews still
+  build.
 
 ## Preview deployments
 
@@ -40,6 +43,11 @@ Previews must never point at the production database, and only `VITE_*`
 Production deployments are disabled on the Vercel project. Turning them on is
 a separate owner decision (it would be the first public deploy) and needs the
 API hosting design first, since the same `/api` limitation applies.
+
+`git.deploymentEnabled` in `vercel.json` stops Git-triggered deployments from
+`main` only. The Vercel CLI (`vercel --prod`) and the Vercel API can still
+deploy, so the first production deploy stays a deliberate, approved step. The
+project's Ignored Build Step setting stays in place as a second check.
 
 ## Setup (maintainers)
 
