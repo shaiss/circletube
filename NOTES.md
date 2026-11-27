@@ -6,7 +6,7 @@
 - Brief / charter: `BRIEF.md`, `PM.md`. Field convention: `FIELD-TEST.md`.
 - Machine: `forge/` (public-safe embed). Lineage: root `forge.conf`.
 - Agent rules: `docs/agent_rules/` via `AGENTS.md`.
-- Confirm state: `npm run check` (`tsc`) and `jest -c jest.unit.config.cjs` (unit suites under `server/test/unit/`).
+- Confirm state: `npm run check` (`tsc`) and `npx jest -c jest.unit.config.cjs` (the suites listed in its `testMatch`).
 - Realtime needs Railway (or equivalent) + WS; Vercel-only will not carry the scheduler. In-repo scaffold: `docs/deploy-railway.md`. Canonical Railway project/URL is still unset.
 
 ## Log
