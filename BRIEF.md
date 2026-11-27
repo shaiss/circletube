@@ -20,7 +20,7 @@ not the first user.
 | Postgres data model via Drizzle + Zod | Given | `shared/`; `docs/agent_rules/database.md` |
 | Realtime over WebSocket (`/ws`) plus in-process `ResponseScheduler` | Given | `server/websocket.ts`, `server/response-scheduler.ts` |
 | NFT / on-chain follower identity under `contracts/` | Given | `contracts/AIFollowerNFT.sol` (present) |
-| Deploy target that can host a long-lived Node process (WS + scheduler) | Given | Runtime reality — **Railway (or equivalent) required**; Vercel-only will not carry WS/scheduler |
+| Deploy target that can host a long-lived Node process (WS + scheduler) | Given | Runtime reality — a long-lived Node host is required (not decided yet); the Vercel frontend build does not carry WS/scheduler |
 | Merge / deploy gate (build → deploy → boot → smoke) | Assumed deferred | F4: no gate runners at embed; honest baseline below |
 
 ## Stack
@@ -30,7 +30,7 @@ not the first user.
 - **Data:** PostgreSQL, Drizzle ORM, Zod validation (`shared/`)
 - **Contracts:** Solidity under `contracts/` (OpenZeppelin)
 - **Agent conventions:** `docs/agent_rules/` (API, database, flows, testing) — cite; do not duplicate
-- **Deploy:** long-lived Node host required for realtime. **Railway/WS required for realtime — Vercel-only will not carry WS/scheduler** (`vercel.json` exists for static/API experiments; it is not a substitute for the WS + scheduler process)
+- **Deploy:** the static client builds on Vercel (`vercel.json`, previews only; see `docs/deploy-vercel.md`). Realtime needs a long-lived Node host for `/ws` and the scheduler; that host is not decided yet.
 
 ## Module breakdown
 
@@ -39,23 +39,23 @@ not the first user.
 | Auth / sessions | Passport-local login, session store | Cookie session survives deploy + WS upgrade |
 | Circles / posts | Circle CRUD, posts, categories | Lab- vs circle-scoped content queries |
 | AI followers | Personas, mute/active, NFT link | OpenAI reply path with thread context |
-| WebSocket | `/ws` live updates to clients | Upgrade + broadcast on Railway (not Vercel serverless) |
+| WebSocket | `/ws` live updates to clients | Upgrade + broadcast on a long-lived host (not Vercel) |
 | ResponseScheduler | Delayed/probabilistic follower replies | Scheduler ticks while process stays up |
 | Contracts | On-chain follower NFT | Deploy/read against a test network |
 
 ## Assumptions & defaults
 
 - Solo operator is admiral (human lead); public multi-tenant auth is out of charter until declared.
-- `npm run check` (`tsc`) is the only package script gate today.
+- CI (`.github/workflows/ci.yml`) runs the type check (the error count may not rise above the baseline), build, unit tests and a secret scan; `CI OK` is the required check on `main`.
 - Unit tests run with `npx jest -c jest.unit.config.cjs` (the suites listed in its `testMatch`). The old archived server suites were removed in the 2026-11-27 repo cleanup (see git history).
-- No CI workflows, gate runners, skills automation, autonomy routines, or `forger-init` added at embed (F4).
-- Realtime correctness requires a process host (Railway or equivalent), not Vercel-only.
+- No gate runners, skills automation, autonomy routines, or `forger-init` added at embed (F4). CI was added later (2026-11-27).
+- Realtime correctness requires a long-lived process host, not Vercel.
 
 ## Open questions
 
 **Blocks scaffolding of a real gate**
 
-- Which Railway (or other long-lived) service is the canonical deploy target for WS + `ResponseScheduler`?
+- Which long-lived host is the canonical deploy target for WS + `ResponseScheduler`?
 
 **May proceed on stated assumption**
 

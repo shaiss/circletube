@@ -4,6 +4,9 @@
   "installCommand": "npm ci",
   "buildCommand": "npx vite build",
   "outputDirectory": "dist/public",
+  "git": {
+    "deploymentEnabled": { "main": false }
+  },
   "rewrites": [
     { "source": "/((?!api(?:/|$)|ws(?:/|$)|assets(?:/|$)).*)", "destination": "/index.html" }
   ],
