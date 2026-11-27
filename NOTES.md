@@ -6,10 +6,15 @@
 - Brief / charter: `BRIEF.md`, `PM.md`. Field convention: `FIELD-TEST.md`.
 - Machine: `forge/` (public-safe embed). Lineage: root `forge.conf`.
 - Agent rules: `docs/agent_rules/` via `AGENTS.md`.
-- Confirm state: `npm run check` (`tsc`). Server tests are archived (`.archive-server-tests/`); not a green gate.
+- Confirm state: `npm run check` (`tsc`) and `jest -c jest.unit.config.cjs` (unit suites under `server/test/unit/`).
 - Realtime needs Railway (or equivalent) + WS; Vercel-only will not carry the scheduler. In-repo scaffold: `docs/deploy-railway.md`. Canonical Railway project/URL is still unset.
 
 ## Log
+
+### 2026-11-27 — repo cleanup (Replit-era leftovers)
+- **Did:** Removed duplicated archive trees (`archive/`, `.archive-legacy/`), pasted log dumps and screenshots (`attached_assets/`, `.archive-assets/`), the archived server suites and agent rules (`.archive-server-tests/`, `.archive-agent-rules/`, `.archive-openai-test-route.ts`), and the unused `generated-icon.png` and `theme.json`. Live copies of the agent rules stay in `docs/agent_rules/`; `icons/` stays.
+- **Decided (and why):** Everything removed is unreferenced by the build, tests or docs and is preserved in git history. `railway.toml` and `nixpacks.toml` stay (Keel). Lockfile untouched here.
+- **Left for next session:** `forge/` is a subtree embed and still mentions the archived suites in its worked example; change it upstream in forger, not here.
 
 ### 2026-10-04 — Railway process-host scaffold (B1 config)
 - **Did:** Listen port honors `process.env.PORT` with 5000 fallback on `0.0.0.0`; dropped `reusePort` and the 5001 fallback (would miss Railway's proxy). Added `railway.toml` (Railpack: `npm run build` / `npm start`, healthcheck `/api/health`) and `nixpacks.toml` fallback (Node 22). Documented create-service steps and env **names** in `docs/deploy-railway.md`. `engines.node` is `>=20`. Did not create a Railway project, commit secrets, or add CI.

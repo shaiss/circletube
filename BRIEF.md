@@ -47,7 +47,7 @@ not the first user.
 
 - Solo operator is admiral (human lead); public multi-tenant auth is out of charter until declared.
 - `npm run check` (`tsc`) is the only package script gate today.
-- Server Jest suite lives under `.archive-server-tests/` (and a residual `server/test/` tree) — **archived / not the running gate**.
+- Unit tests run with `jest -c jest.unit.config.cjs` (`server/test/unit/`). The old archived server suites were removed in the 2026-11-27 repo cleanup (see git history).
 - No CI workflows, gate runners, skills automation, autonomy routines, or `forger-init` added at embed (F4).
 - Realtime correctness requires a process host (Railway or equivalent), not Vercel-only.
 
