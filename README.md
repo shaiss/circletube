@@ -76,7 +76,7 @@ The type check still reports known errors that are being paid down in small PRs;
 
 ## Deploy shape
 
-- **Frontend:** the static Vite build on Vercel, with preview builds on pull requests. Previews are UI-only: there is no hosted API yet, so pages that load data or sign in show errors.
+- **Frontend:** the static Vite build on Vercel, with preview builds on pull requests. Previews serve only `/auth` and other public routes: there is no hosted API yet, so `/api/user` returns 404 and every protected route redirects to `/auth`. See [docs/deploy-vercel.md](docs/deploy-vercel.md).
 - **API, WebSocket server and response scheduler:** hosting is not decided yet. They need a long-running process, so they are not part of the Vercel build; the API hosting design comes later. `railway.toml`, `nixpacks.toml` and `docs/deploy-railway.md` are earlier notes and are not in use.
 
 No production deployment exists yet.
@@ -100,6 +100,7 @@ Changes land through pull requests into `main`, squash-merged after CI passes, r
 
 ## Docs
 
+- [Vercel frontend deploy](docs/deploy-vercel.md)
 - [Railway notes (not in use)](docs/deploy-railway.md)
 - [API reference](docs/agent_rules/api.md)
 - [Database](docs/agent_rules/database.md)
