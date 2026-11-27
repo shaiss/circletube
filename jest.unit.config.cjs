@@ -15,6 +15,8 @@ module.exports = {
     "<rootDir>/server/test/unit/circle-post-user-fields.test.ts",
     "<rootDir>/server/test/unit/public-user-guard.test.ts",
     "<rootDir>/server/test/unit/api-error-handler.test.ts",
+    "<rootDir>/server/test/unit/nft-routes-gate.test.ts",
+    "<rootDir>/server/test/unit/session-scoped-queries.test.ts",
   ],
   moduleNameMapper: {
     "^@shared/(.*)$": "<rootDir>/shared/$1",

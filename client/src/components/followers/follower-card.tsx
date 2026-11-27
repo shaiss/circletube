@@ -8,8 +8,8 @@ import { responsivenessOptions } from "./follower-create-form";
 import { FollowerEditDialog } from "./follower-edit-dialog";
 import { FollowerDeactivateDialog } from "./follower-deactivate-dialog";
 import { FollowerDeleteDialog } from "./follower-delete-dialog";
-// Temporarily hidden NFT feature
-// import { FollowerNftMint } from "./follower-nft-mint";
+import { FollowerNftMint } from "./follower-nft-mint";
+import { useNftEnabled } from "@/hooks/use-nft-enabled";
 import { useLocation } from "wouter";
 
 interface FollowerCardProps {
@@ -30,6 +30,7 @@ export function FollowerCard({
   showDeleteButton = false 
 }: FollowerCardProps) {
   const [_, navigate] = useLocation();
+  const nftEnabled = useNftEnabled();
 
   const handleNavigateToConfig = () => {
     console.log(`[FollowerCard] Navigating to config page for follower ID: ${follower.id}`);
@@ -153,10 +154,12 @@ export function FollowerCard({
         </div>
       </div>
 
-      {/* Temporarily hidden NFT feature */}
-      {/* <div className="flex justify-end">
-        <FollowerNftMint follower={follower} />
-      </div> */}
+      {/* NFT UI only renders when the server reports the feature as on */}
+      {nftEnabled && (
+        <div className="flex justify-end">
+          <FollowerNftMint follower={follower} />
+        </div>
+      )}
 
       {follower.background && (
         <div className="space-y-2 mt-2">
