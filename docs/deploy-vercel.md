@@ -1,8 +1,9 @@
 # Circletube frontend on Vercel
 
 Vercel hosts only the static client. The API, the `/ws` WebSocket server and
-the response scheduler need a long-running Node process and run on Railway
-(see `deploy-railway.md`).
+the response scheduler need a long-running process and are not part of this
+build. Where they will be hosted is not decided yet; that design comes later.
+(`deploy-railway.md` holds earlier notes and is not in use.)
 
 ## What `vercel.json` does
 
@@ -20,18 +21,22 @@ the response scheduler need a long-running Node process and run on Railway
 Each pull request gets a preview build once the Vercel project is linked to
 this repository.
 
-**Previews are UI-only for now.** There is no non-production API yet, so
-pages that load data or sign in will show errors in a preview. Use previews
-for layout and visual review.
+**Previews are UI-only for now.** There is no hosted API yet, so `/api`
+requests return 404 and pages that load data or sign in will show errors in a
+preview. Use previews for layout and visual review. This is intended until
+the API hosting design lands; it will add whatever routing the API needs.
 
-When a non-production (staging) API exists on Railway, previews can reach it
-by proxying `/api` with a Vercel rewrite to the staging host, so requests stay
-same-origin. The WebSocket connection would need a separate, build-time
-`VITE_*` URL because Vercel rewrites do not carry WebSocket upgrades. Previews
-must never point at the production database, and only `VITE_*` (public,
-build-time) values belong in Vercel's environment settings.
+Previews must never point at the production database, and only `VITE_*`
+(public, build-time) values belong in Vercel's environment settings.
+
+## Production
+
+Production deployments are disabled on the Vercel project. Turning them on is
+a separate owner decision (it would be the first public deploy) and needs the
+API hosting design first, since the same `/api` limitation applies.
 
 ## Setup (maintainers)
 
-Linking the Vercel project, turning on pull request previews and choosing
-preview access protection are done in the Vercel dashboard by a maintainer.
+Linking the Vercel project, turning on pull request previews, protecting
+previews with Vercel Authentication and keeping production disabled are done
+in the Vercel dashboard by a maintainer.
