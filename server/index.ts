@@ -43,7 +43,7 @@ process.on('unhandledRejection', (reason, promise) => {
       serveStatic(app);
     }
 
-    // Railway (and similar hosts) inject PORT; fall back to 5000 for local prod runs.
+    // Hosts may inject PORT; fall back to 5000 for local prod runs.
     const port = Number(process.env.PORT) || 5000;
 
     server.on('error', (error: any) => {
