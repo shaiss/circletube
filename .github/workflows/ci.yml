@@ -136,12 +136,13 @@ jobs:
           if [ "$EVENT" = "pull_request" ]; then
             range="${BASE_SHA}..${HEAD_SHA}"
           elif [ -n "${BEFORE_SHA:-}" ] && ! printf '%s' "$BEFORE_SHA" | grep -qE '^0{40}$' \
-               && git rev-parse -q --verify "${BEFORE_SHA}^{commit}" >/dev/null 2>&1; then
+               && git cat-file -e "${BEFORE_SHA}^{commit}" 2>/dev/null; then
             range="${BEFORE_SHA}..${HEAD_SHA}"
-          elif git rev-parse -q --verify "${HEAD_SHA}^" >/dev/null 2>&1; then
-            range="${HEAD_SHA}^..${HEAD_SHA}"   # no usable before: scan only the pushed commit
           else
-            range="-1 ${HEAD_SHA}"              # pushed commit has no parent: scan that commit
+            # Fail closed: without a resolvable "before" commit the pushed
+            # range is unknown, and a guessed range could leave commits unscanned.
+            echo "::error::cannot resolve the pushed range; run a manual full-history scan"
+            exit 1
           fi
 
           # Scan settings come from a trusted source only. On PRs that is the
