@@ -27,7 +27,7 @@ Requirements: Node.js 20 or later (`.nvmrc` pins 22), a Neon Postgres database, 
 
 - **Database:** the server connects through Neon's serverless driver over WebSocket (`server/db.ts`). Use a Neon database (a free dev branch works). A plain local PostgreSQL will not accept these connections unless you run a Neon-compatible WebSocket proxy in front of it.
 - **OpenAI key:** the OpenAI client is created when the server starts, so `OPENAI_API_KEY` must be set for the server to boot.
-- **Environment:** the scripts do not read `.env` on their own. Load it into your shell first, as below.
+- **Environment:** the scripts do not read `.env` on their own. Load it into your shell first, as below. The file is read by the shell, so single-quote any value that contains `&`, `?`, `$`, spaces or other shell-special characters, e.g. `DATABASE_URL='...?sslmode=require&channel_binding=require'`. An unquoted `&` ends the assignment and the variable is not set.
 
 ```bash
 nvm use                # optional, reads .nvmrc
