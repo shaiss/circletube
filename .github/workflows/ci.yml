@@ -1,0 +1,196 @@
+# CI for circletube.
+#
+# Branch protection requires exactly one context: "CI OK". That job needs every
+# gating job below, always runs, and passes only when every one of them
+# succeeded (skipped or cancelled counts as a failure). Add any new gating job
+# to ci-ok.needs in the same change.
+#
+# Hardening: pull_request (never pull_request_target) and push to main only;
+# read-only token; no secrets; every action pinned by full commit SHA;
+# checkout without persisted credentials; per-job timeouts.
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+# PR runs share one group per branch and cancel superseded runs. Each push to
+# main gets its own group (run_id), so no main run is ever queued out or
+# cancelled and every pushed commit is scanned.
+concurrency:
+  group: ${{ github.event_name == 'pull_request' && format('ci-pr-{0}', github.ref) || format('ci-push-{0}', github.run_id) }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  typecheck:
+    name: Type check (baseline-gated)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      # Known tsc errors on main 41c52678. Lower this as type-debt PRs land;
+      # never raise it without review.
+      TSC_ERROR_BASELINE: "104"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Setup Node
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+      - name: Install
+        run: npm ci
+      - name: tsc
+        run: |
+          set -uo pipefail
+          set +e
+          OUT=$(npx tsc --noEmit --incremental false 2>&1)
+          EC=$?
+          set -e
+          COUNT=$(printf '%s\n' "$OUT" | grep -c 'error TS' || true)
+          printf '%s\n' "$OUT"
+          echo "tsc exit=$EC errors=$COUNT baseline=$TSC_ERROR_BASELINE"
+          if [ "$EC" -gt 2 ] || { [ "$EC" -ne 0 ] && [ "$COUNT" -eq 0 ]; }; then
+            echo "::error::tsc did not run cleanly (exit $EC, $COUNT diagnostics)"
+            exit 1
+          fi
+          if [ "$COUNT" -gt "$TSC_ERROR_BASELINE" ]; then
+            echo "::error::tsc errors rose to $COUNT (baseline $TSC_ERROR_BASELINE)"
+            exit 1
+          fi
+
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Setup Node
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+      - name: Install
+        run: npm ci
+      - name: Build
+        run: npm run build
+
+  unit:
+    name: Unit tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Setup Node
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+      - name: Install
+        run: npm ci
+      - name: Jest
+        env:
+          CI: "1"
+          NODE_ENV: test
+        run: npx jest -c jest.unit.config.cjs --ci --watchAll=false -i
+
+  secret-scan:
+    name: Secret scan (gitleaks)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - name: Install gitleaks (pinned version and checksum)
+        env:
+          GITLEAKS_VERSION: 8.21.2
+          GITLEAKS_SHA256: 5bc41815076e6ed6ef8fbecc9d9b75bcae31f39029ceb55da08086315316e3ba
+        run: |
+          set -euo pipefail
+          tarball="gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz"
+          curl -fsSL "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/${tarball}" -o "$RUNNER_TEMP/$tarball"
+          echo "${GITLEAKS_SHA256}  $RUNNER_TEMP/$tarball" | sha256sum -c -
+          tar -xzf "$RUNNER_TEMP/$tarball" -C "$RUNNER_TEMP" gitleaks
+          "$RUNNER_TEMP/gitleaks" version
+      - name: Scan introduced commits
+        env:
+          EVENT: ${{ github.event_name }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+          BEFORE_SHA: ${{ github.event.before }}
+        run: |
+          set -euo pipefail
+          if [ "$EVENT" = "pull_request" ]; then
+            range="${BASE_SHA}..${HEAD_SHA}"
+          elif [ -n "${BEFORE_SHA:-}" ] && ! printf '%s' "$BEFORE_SHA" | grep -qE '^0{40}$' \
+               && git rev-parse -q --verify "${BEFORE_SHA}^{commit}" >/dev/null 2>&1; then
+            range="${BEFORE_SHA}..${HEAD_SHA}"
+          else
+            range="${HEAD_SHA}"   # first push or unknown before: full history
+          fi
+
+          # Scan settings come from a trusted source only. On PRs that is the
+          # base commit (a PR cannot loosen its own scan); on pushes to main it
+          # is the pushed main commit itself. With no config file, use the
+          # built-in rules explicitly so gitleaks never picks one up from the
+          # checkout.
+          cfg="$RUNNER_TEMP/gitleaks.toml"
+          ign_dir="$RUNNER_TEMP/gitleaks-ignore"
+          mkdir -p "$ign_dir"
+          if [ "$EVENT" = "pull_request" ]; then
+            src="$BASE_SHA"
+          else
+            src="$HEAD_SHA"
+          fi
+          if ! git show "${src}:.gitleaks.toml" > "$cfg" 2>/dev/null; then
+            printf '[extend]\nuseDefault = true\n' > "$cfg"
+          fi
+          git show "${src}:.gitleaksignore" > "$ign_dir/.gitleaksignore" 2>/dev/null || rm -f "$ign_dir/.gitleaksignore"
+          # Remove the checkout's own copies so they cannot be discovered.
+          rm -f .gitleaks.toml .gitleaksignore
+
+          echo "scanning $range (settings from ${src})"
+          # --diff-merges=first-parent: include merge-commit changes.
+          # --ignore-gitleaks-allow: inline allow comments do not suppress findings.
+          "$RUNNER_TEMP/gitleaks" git --no-banner --redact \
+            --config "$cfg" \
+            --gitleaks-ignore-path "$ign_dir" \
+            --ignore-gitleaks-allow \
+            --log-opts="--diff-merges=first-parent $range" .
+
+  ci-ok:
+    name: CI OK
+    needs: [typecheck, build, unit, secret-scan]
+    if: ${{ always() }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Every gating job succeeded
+        env:
+          RESULTS: ${{ toJSON(needs) }}
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json, os, sys
+          needs = json.loads(os.environ["RESULTS"])
+          for job, info in sorted(needs.items()):
+              print(f"{info['result']:>9}  {job}")
+          bad = [j for j, i in needs.items() if i["result"] != "success"]
+          if bad:
+              print("not green: " + ", ".join(sorted(bad)))
+              sys.exit(1)
+          print("CI OK")
+          PY
