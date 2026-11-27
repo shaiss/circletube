@@ -9,8 +9,9 @@ build. Where they will be hosted is not decided yet; that design comes later.
 
 - Installs with `npm ci` and builds only the Vite client (`npx vite build`)
   into `dist/public`. The server bundle is not built or deployed on Vercel.
-- Serves `index.html` for client routes (single-page app fallback). Paths
-  under `/api` and `/ws` are not rewritten, so they return 404 on Vercel.
+- Serves `index.html` for client routes (single-page app fallback).
+  `/api`, `/ws` and every path under them (such as `/api/x` or `/ws/x`) are
+  not rewritten, so they return 404 on Vercel.
 - Adds response headers: no framing, no plugins, same-origin base URL,
   `nosniff`, a strict referrer policy, and long caching for hashed assets.
 - Defines no functions and no environment variables. Vercel holds no server
