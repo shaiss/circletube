@@ -14,7 +14,9 @@ build. Where they will be hosted is not decided yet; that design comes later.
   `/ws/x` or a missing `/assets/x.js`) are not rewritten, so they return 404
   on Vercel instead of `index.html`.
 - Adds response headers: no framing, no plugins, same-origin base URL,
-  `nosniff`, a strict referrer policy, and long caching for hashed assets.
+  `nosniff` and a strict referrer policy. It sets no custom caching: files
+  under `/assets` use Vercel's default caching until there is a production
+  deploy decision.
 - Defines no functions and no environment variables. Vercel holds no server
   secrets.
 
@@ -23,9 +25,11 @@ build. Where they will be hosted is not decided yet; that design comes later.
 Each pull request gets a preview build once the Vercel project is linked to
 this repository.
 
-**Previews are UI-only for now.** There is no hosted API yet, so `/api`
-requests return 404 and pages that load data or sign in will show errors in a
-preview. Use previews for layout and visual review. This is intended until
+**Previews serve only `/auth` and other public routes for now.** There is no
+hosted API yet, so `/api` requests return 404. Because `/api/user` returns
+404, the app sees no signed-in user and every protected route redirects to
+`/auth`.
+Use previews to review `/auth` and other public pages. This is intended until
 the API hosting design lands; it will add whatever routing the API needs.
 
 Previews must never point at the production database, and only `VITE_*`
