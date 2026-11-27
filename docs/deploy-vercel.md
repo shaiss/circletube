@@ -45,8 +45,13 @@ API hosting design first, since the same `/api` limitation applies.
 
 `git.deploymentEnabled` in `vercel.json` stops Git-triggered deployments from
 `main` only. The Vercel CLI (`vercel --prod`) and the Vercel API can still
-deploy, so the first production deploy stays a deliberate, approved step. The
-project's Ignored Build Step setting stays in place as a second check.
+deploy. The project's Ignored Build Step setting stays in place as a second
+check for Git-triggered builds; it is not guaranteed to apply to a deploy
+started from the CLI with `--prod`.
+
+Keeping the first production deploy a deliberate, approved step is a team
+process rule. Neither `git.deploymentEnabled` nor the Ignored Build Step
+enforces it.
 
 ## Setup (maintainers)
 
