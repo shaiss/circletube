@@ -10,8 +10,39 @@ export const NFT_ENABLED_QUERY_KEY = ["/api/nft/enabled"] as const;
  */
 export const SESSION_SCOPED_QUERY_KEYS = [NFT_ENABLED_QUERY_KEY] as const;
 
-export function refreshSessionScopedQueries(client: QueryClient): Promise<void[]> {
-  return Promise.all(
-    SESSION_SCOPED_QUERY_KEYS.map((queryKey) => client.invalidateQueries({ queryKey })),
-  );
+/**
+ * Refresh session-scoped queries after the session changes.
+ *
+ * Any request started before the change is cancelled first, so its late
+ * response is discarded instead of being stored for the new session.
+ * - signed in (login/register): the cached value is reset and active
+ *   queries refetch for the new session.
+ * - signedOut (logout): the value is set to null immediately (before any
+ *   await) so dependent UI hides right away.
+ */
+function clearToSignedOut(client: QueryClient): void {
+  for (const queryKey of SESSION_SCOPED_QUERY_KEYS) {
+    client.setQueryData<unknown>(queryKey, null);
+  }
+}
+
+export async function refreshSessionScopedQueries(
+  client: QueryClient,
+  { signedOut = false }: { signedOut?: boolean } = {},
+): Promise<void> {
+  const keys = SESSION_SCOPED_QUERY_KEYS;
+
+  // Cancel first. A cancelled request restores the state from before it
+  // started, so the signed-out value is written after this call.
+  const cancelled = keys.map((queryKey) => client.cancelQueries({ queryKey }));
+
+  if (signedOut) {
+    clearToSignedOut(client);
+    await Promise.all(cancelled);
+    clearToSignedOut(client);
+    return;
+  }
+
+  await Promise.all(cancelled);
+  await Promise.all(keys.map((queryKey) => client.resetQueries({ queryKey })));
 }

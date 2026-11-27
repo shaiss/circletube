@@ -90,7 +90,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     },
     onSuccess: () => {
       queryClient.setQueryData(["/api/user"], null);
-      void refreshSessionScopedQueries(queryClient);
+      void refreshSessionScopedQueries(queryClient, { signedOut: true });
     },
     onError: (error: Error) => {
       toast({
