@@ -1,0 +1,173 @@
+# CI for circletube.
+#
+# Branch protection requires exactly one context: "CI OK". That job needs every
+# gating job below and runs even when one of them fails, so a required check is
+# always reported. Add any new gating job to ci-ok.needs in the same change.
+#
+# Hardening: pull_request (never pull_request_target) and push to main only;
+# read-only token; no secrets; every action pinned by full commit SHA;
+# checkout without persisted credentials; per-job timeouts.
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  typecheck:
+    name: Type check (baseline-gated)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      # Known tsc errors on main 41c52678. Lower this as type-debt PRs land;
+      # never raise it without review.
+      TSC_ERROR_BASELINE: "104"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Setup Node
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+      - name: Install
+        run: npm ci
+      - name: tsc
+        run: |
+          set -uo pipefail
+          set +e
+          OUT=$(npx tsc --noEmit --incremental false 2>&1)
+          EC=$?
+          set -e
+          COUNT=$(printf '%s\n' "$OUT" | grep -c 'error TS' || true)
+          printf '%s\n' "$OUT"
+          echo "tsc exit=$EC errors=$COUNT baseline=$TSC_ERROR_BASELINE"
+          if [ "$EC" -gt 2 ] || { [ "$EC" -ne 0 ] && [ "$COUNT" -eq 0 ]; }; then
+            echo "::error::tsc did not run cleanly (exit $EC, $COUNT diagnostics)"
+            exit 1
+          fi
+          if [ "$COUNT" -gt "$TSC_ERROR_BASELINE" ]; then
+            echo "::error::tsc errors rose to $COUNT (baseline $TSC_ERROR_BASELINE)"
+            exit 1
+          fi
+
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Setup Node
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+      - name: Install
+        run: npm ci
+      - name: Build
+        run: npm run build
+
+  unit:
+    name: Unit tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Setup Node
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+      - name: Install
+        run: npm ci
+      - name: Jest
+        env:
+          CI: "1"
+          NODE_ENV: test
+        run: npx jest -c jest.unit.config.cjs --ci --watchAll=false -i
+
+  secret-scan:
+    name: Secret scan (gitleaks)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - name: Install gitleaks (pinned version and checksum)
+        env:
+          GITLEAKS_VERSION: 8.21.2
+          GITLEAKS_SHA256: 5bc41815076e6ed6ef8fbecc9d9b75bcae31f39029ceb55da08086315316e3ba
+        run: |
+          set -euo pipefail
+          tarball="gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz"
+          curl -fsSL "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/${tarball}" -o "$RUNNER_TEMP/$tarball"
+          echo "${GITLEAKS_SHA256}  $RUNNER_TEMP/$tarball" | sha256sum -c -
+          tar -xzf "$RUNNER_TEMP/$tarball" -C "$RUNNER_TEMP" gitleaks
+          "$RUNNER_TEMP/gitleaks" version
+      - name: Scan introduced commits
+        env:
+          EVENT: ${{ github.event_name }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+          BEFORE_SHA: ${{ github.event.before }}
+        run: |
+          set -euo pipefail
+          empty_tree="$(git hash-object -t tree /dev/null)"
+          if [ "$EVENT" = "pull_request" ]; then
+            range="${BASE_SHA}..${HEAD_SHA}"
+          elif [ -n "${BEFORE_SHA:-}" ] && ! printf '%s' "$BEFORE_SHA" | grep -qE '^0{40}$' \
+               && git rev-parse -q --verify "${BEFORE_SHA}^{commit}" >/dev/null 2>&1; then
+            range="${BEFORE_SHA}..${HEAD_SHA}"
+          else
+            range="${empty_tree}..${HEAD_SHA}"
+          fi
+          # On PRs, use the base branch's config so a PR cannot loosen its own scan.
+          config_arg=()
+          if [ "$EVENT" = "pull_request" ] && git show "${BASE_SHA}:.gitleaks.toml" > "$RUNNER_TEMP/gitleaks.toml" 2>/dev/null; then
+            config_arg=(--config "$RUNNER_TEMP/gitleaks.toml")
+          elif [ "$EVENT" != "pull_request" ] && [ -f .gitleaks.toml ]; then
+            config_arg=(--config .gitleaks.toml)
+          fi
+          echo "scanning $range"
+          "$RUNNER_TEMP/gitleaks" git --no-banner --redact "${config_arg[@]}" --log-opts="$range" .
+
+  ci-ok:
+    name: CI OK
+    needs: [typecheck, build, unit, secret-scan]
+    if: ${{ !cancelled() }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Every gating job succeeded
+        env:
+          RESULTS: ${{ toJSON(needs) }}
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json, os, sys
+          needs = json.loads(os.environ["RESULTS"])
+          for job, info in sorted(needs.items()):
+              print(f"{info['result']:>9}  {job}")
+          bad = [j for j, i in needs.items() if i["result"] not in ("success", "skipped")]
+          if bad:
+              print("not green: " + ", ".join(sorted(bad)))
+              sys.exit(1)
+          print("CI OK")
+          PY
