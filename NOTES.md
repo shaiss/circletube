@@ -7,9 +7,14 @@
 - Machine: `forge/` (public-safe embed). Lineage: root `forge.conf`.
 - Agent rules: `docs/agent_rules/` via `AGENTS.md`.
 - Confirm state: `npm run check` (`tsc`) and `npx jest -c jest.unit.config.cjs` (the suites listed in its `testMatch`).
-- Realtime needs Railway (or equivalent) + WS; Vercel-only will not carry the scheduler. In-repo scaffold: `docs/deploy-railway.md`. Canonical Railway project/URL is still unset.
+- Realtime needs a long-lived process host for `/ws` and the scheduler; that host is not decided yet. The static client builds on Vercel previews (`docs/deploy-vercel.md`).
 
 ## Log
+
+### 2026-11-27 — remove unused Railway deploy config
+- **Did:** Removed `railway.toml`, `nixpacks.toml` and `docs/deploy-railway.md`, and the Railway mentions in `README.md`, `BRIEF.md`, `docs/deploy-vercel.md` and two server comments. No behavior change.
+- **Decided (and why):** No Railway service runs Circletube (Keel confirmed). The frontend is on Vercel; the API host comes with the API hosting design.
+- **Left for next session:** Pick the long-lived host for the API, `/ws` and the scheduler.
 
 ### 2026-11-27 — repo cleanup (Replit-era leftovers)
 - **Did:** Removed duplicated archive trees (`archive/`, `.archive-legacy/`), pasted log dumps and screenshots (`attached_assets/`, `.archive-assets/`), the archived server suites and agent rules (`.archive-server-tests/`, `.archive-agent-rules/`, `.archive-openai-test-route.ts`), and the unused `generated-icon.png` and `theme.json`. Live copies of the agent rules stay in `docs/agent_rules/`; `icons/` stays.
