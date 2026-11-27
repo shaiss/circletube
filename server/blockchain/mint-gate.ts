@@ -26,12 +26,13 @@ let lastMintSweep = 0;
 /**
  * Drops users whose newest mint attempt is older than MINT_WINDOW_MS, so the
  * map does not grow with every user who ever called the mint route.
- * Returns how many entries were removed.
+ * Uses the largest timestamp, not the last array entry: if the clock steps
+ * back, entries are no longer in time order. Returns how many were removed.
  */
 export function pruneMintAttempts(now: number = Date.now()): number {
   let removed = 0;
   for (const [userId, times] of Array.from(mintAttempts.entries())) {
-    const newest = times[times.length - 1];
+    const newest = times.length > 0 ? Math.max(...times) : undefined;
     if (newest === undefined || now - newest >= MINT_WINDOW_MS) {
       mintAttempts.delete(userId);
       removed++;

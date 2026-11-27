@@ -60,6 +60,15 @@ describe("mint rate limiter pruning (#53)", () => {
     expect(mintAttemptUserCount()).toBe(1);
   });
 
+  it("keeps a user whose newest attempt is not the last entry (clock stepped back)", () => {
+    now = start + MINT_WINDOW_MS - 1;
+    for (let i = 0; i < MINT_LIMIT_PER_WINDOW - 1; i++) call(5);
+    now = start; // clock steps back; this attempt is appended last but is the oldest
+    call(5);
+    expect(pruneMintAttempts(start + MINT_WINDOW_MS + 1)).toBe(0);
+    expect(mintAttemptUserCount()).toBe(1);
+  });
+
   it("still enforces the limit for an active user across a sweep", () => {
     for (let i = 0; i < MINT_LIMIT_PER_WINDOW; i++) {
       expect(call(7).next).toHaveBeenCalled();
