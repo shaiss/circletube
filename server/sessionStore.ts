@@ -6,7 +6,7 @@ const MemoryStore = memorystore(session);
 const PgStore = connectPgSimple(session);
 
 /**
- * Production uses Postgres (connect-pg-simple + DATABASE_URL) so Railway
+ * Production uses Postgres (connect-pg-simple + DATABASE_URL) so process
  * restarts keep logins. Local/dev keeps the in-memory store for an easy path.
  * SESSION_SECRET fail-fast in production is unchanged (see sessionSecret.ts).
  */

@@ -3,7 +3,6 @@
 Vercel hosts only the static client. The API, the `/ws` WebSocket server and
 the response scheduler need a long-running process and are not part of this
 build. Where they will be hosted is not decided yet; that design comes later.
-(`deploy-railway.md` holds earlier notes and is not in use.)
 
 ## What `vercel.json` does
 
