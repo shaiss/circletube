@@ -47,7 +47,7 @@ not the first user.
 
 - Solo operator is admiral (human lead); public multi-tenant auth is out of charter until declared.
 - `npm run check` (`tsc`) is the only package script gate today.
-- Server Jest suite lives under `.archive-server-tests/` (and a residual `server/test/` tree) — **archived / not the running gate**.
+- Unit tests run with `npx jest -c jest.unit.config.cjs` (the suites listed in its `testMatch`). The old archived server suites were removed in the 2026-11-27 repo cleanup (see git history).
 - No CI workflows, gate runners, skills automation, autonomy routines, or `forger-init` added at embed (F4).
 - Realtime correctness requires a process host (Railway or equivalent), not Vercel-only.
 
@@ -59,9 +59,9 @@ not the first user.
 
 **May proceed on stated assumption**
 
-- Gate contract remains unbuilt until a session is blocked without it (F4); baseline is `check: tsc` + archived server tests.
+- Gate contract remains unbuilt until a session is blocked without it (F4); baseline is `check: tsc` + the unit suites in `jest.unit.config.cjs`.
 - How far `contracts/` must go for v1 vs mock/off-chain follower IDs.
 
 ## Done-test
 
-A cold session can start from this brief alone: stack and deploy constraint are named, agent rules and contracts are cited, and the no-gate baseline (`check: tsc` / archived server tests) is honest. Gaps above are Open questions, not silent holes.
+A cold session can start from this brief alone: stack and deploy constraint are named, agent rules and contracts are cited, and the baseline (`check: tsc` / unit suites in `jest.unit.config.cjs`) is honest. Gaps above are Open questions, not silent holes.

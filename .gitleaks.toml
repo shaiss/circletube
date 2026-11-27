@@ -1,0 +1,6 @@
+# gitleaks config (used by the secret-scan job in .github/workflows/ci.yml and
+# by a local `gitleaks git` run). Uses gitleaks' built-in rules.
+title = "circletube"
+
+[extend]
+useDefault = true

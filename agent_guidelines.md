@@ -16,7 +16,6 @@ When analyzing this codebase, prioritize these directories:
 
 1. **Any directory or file listed in `.gitignore` or `.agentignore`**
    - The `.agentignore` file contains specific patterns for directories AI agents should not reference
-   - This includes the entire `/archive/*` directory and its subdirectories
    - Also includes any test reports, temporary files, and legacy code patterns
 2. Any directory prefixed with `_` or `.` (except for standard config files)
 3. Any directory or file containing the terms `old`, `deprecated`, or `legacy` in their name

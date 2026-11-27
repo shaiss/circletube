@@ -12,7 +12,7 @@ This file outlines key conventions for AI assistants working in this repository.
 
 ## Directories to Avoid
 
-AI assistants must not reference any files or directories listed in `.gitignore` or `.agentignore`. This includes the entire `archive/` folder, test reports, temporary files and any paths containing `old`, `deprecated` or `legacy` in their name. Also avoid directories prefixed with `_` or `.` (except standard config files).
+AI assistants must not reference any files or directories listed in `.gitignore` or `.agentignore`. This includes test reports, temporary files and any paths containing `old`, `deprecated` or `legacy` in their name. Also avoid directories prefixed with `_` or `.` (except standard config files).
 
 ## File Type Priorities
 
