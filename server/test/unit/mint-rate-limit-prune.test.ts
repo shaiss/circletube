@@ -78,4 +78,26 @@ describe("mint rate limiter pruning (#53)", () => {
     expect(next).not.toHaveBeenCalled();
     expect(res.statusCode).toBe(429);
   });
+
+  it("sweeps from the middleware at most once per window", () => {
+    const W = MINT_WINDOW_MS;
+
+    now = start;
+    call(1); // first request sweeps (nothing to drop); next sweep is due at start + W
+    now = start + W / 2;
+    call(2);
+    expect(mintAttemptUserCount()).toBe(2);
+
+    now = start + W + W / 4; // a full window since the last sweep: sweep runs
+    call(3); // user 1 is idle and dropped; user 2 is still inside its window
+    expect(mintAttemptUserCount()).toBe(2);
+
+    now = start + W + W / 2 + 1; // user 2 is idle now, but the next sweep is not due
+    call(4);
+    expect(mintAttemptUserCount()).toBe(3);
+
+    now = start + 2 * W + W / 4; // a full window since the last sweep: sweep runs
+    call(5); // users 2 and 3 are idle and dropped; user 4 is kept
+    expect(mintAttemptUserCount()).toBe(2);
+  });
 });
