@@ -1,9 +1,9 @@
 import { createContext, useContext, useState, useEffect } from 'react';
-import Shepherd from 'shepherd.js';
+import Shepherd, { Tour } from 'shepherd.js';
 import 'shepherd.js/dist/css/shepherd.css';
 
 interface TourContextType {
-  tour: Shepherd.Tour | null;
+  tour: Tour | null;
   startTour: () => void;
   endTour: () => void;
   isActive: boolean;
@@ -12,7 +12,7 @@ interface TourContextType {
 const TourContext = createContext<TourContextType | undefined>(undefined);
 
 export function TourProvider({ children }: { children: React.ReactNode }) {
-  const [tour, setTour] = useState<Shepherd.Tour | null>(null);
+  const [tour, setTour] = useState<Tour | null>(null);
   const [isActive, setIsActive] = useState(false);
 
   useEffect(() => {
