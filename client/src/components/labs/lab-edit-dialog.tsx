@@ -28,11 +28,17 @@ import { useToast } from "@/hooks/use-toast";
 import { insertLabSchema, Lab } from "@shared/schema";
 import { Trash2, Plus } from "lucide-react";
 
-// Edit schema with validation rules
+type LabMetric = {
+  name: string;
+  target: number;
+  priority: "high" | "medium" | "low";
+};
+
+// Edit schema with validation rules — experimentType matches shared Lab schema
 const editLabSchema = insertLabSchema.extend({
   name: z.string().min(3, "Name must be at least 3 characters"),
   description: z.string().optional(),
-  experimentType: z.enum(["a_b_test", "multivariate", "exploration"]),
+  experimentType: z.enum(["a_b_test", "single_variant"]),
   goals: z.string().optional(),
   successMetrics: z.object({
     metrics: z.array(
@@ -54,15 +60,11 @@ interface LabEditDialogProps {
 
 const LabEditDialog = ({ lab, open, onOpenChange, onUpdate }: LabEditDialogProps) => {
   const { toast } = useToast();
-  const [metrics, setMetrics] = useState<Array<{
-    name: string;
-    target: number;
-    priority: "high" | "medium" | "low";
-  }>([]);
-  const [metric, setMetric] = useState({
+  const [metrics, setMetrics] = useState<LabMetric[]>([]);
+  const [metric, setMetric] = useState<LabMetric>({
     name: "",
     target: 0,
-    priority: "medium" as "high" | "medium" | "low",
+    priority: "medium",
   });
   const [activeTab, setActiveTab] = useState("basic");
 
@@ -113,11 +115,8 @@ const LabEditDialog = ({ lab, open, onOpenChange, onUpdate }: LabEditDialogProps
       // Include the metrics in the data
       data.successMetrics = { metrics };
       
-      // Submit the form
-      await apiRequest(`/api/labs/${lab.id}`, {
-        method: "PATCH",
-        body: data,
-      });
+      // Submit the form (apiRequest signature: url, method, data)
+      await apiRequest(`/api/labs/${lab.id}`, "PATCH", data);
       
       toast({
         title: "Lab updated",
@@ -215,18 +214,14 @@ const LabEditDialog = ({ lab, open, onOpenChange, onUpdate }: LabEditDialogProps
                           <SelectItem value="a_b_test">
                             A/B Test - Compare two variations
                           </SelectItem>
-                          <SelectItem value="multivariate">
-                            Multivariate - Test multiple variables
-                          </SelectItem>
-                          <SelectItem value="exploration">
-                            Exploration - Open-ended experiment
+                          <SelectItem value="single_variant">
+                            Single Variant - Test one content variation
                           </SelectItem>
                         </SelectContent>
                       </Select>
                       <FormDescription>
                         {field.value === "a_b_test" && "Compare two variations of content to determine which performs better."}
-                        {field.value === "multivariate" && "Test how multiple variables interact and affect outcomes."}
-                        {field.value === "exploration" && "Conduct open-ended exploration with less structured testing."}
+                        {field.value === "single_variant" && "Test a single content variation with your audience."}
                       </FormDescription>
                       <FormMessage />
                     </FormItem>

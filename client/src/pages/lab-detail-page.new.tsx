@@ -535,7 +535,7 @@ export default function LabDetailPage() {
                     <CardFooter className="flex flex-col items-start gap-4 pt-0">
                       <LabGoalsEditor 
                         lab={lab} 
-                        onSave={handleGoalsUpdate}
+                        onUpdate={handleGoalsUpdate}
                       />
                       
                       <div className="w-full border-t mt-2 pt-4">
@@ -750,17 +750,17 @@ export default function LabDetailPage() {
       </div>
 
       {/* Status change dialog */}
-      {targetStatus && (
+      {targetStatus && lab && (
         <LabStatusChangeDialog
+          labId={labId || 0}
+          currentStatus={lab.status}
+          newStatus={targetStatus}
           open={!!targetStatus}
           onOpenChange={() => setTargetStatus(null)}
-          onConfirm={() => {
-            if (targetStatus) {
-              handleStatusChange(targetStatus);
-            }
+          onSuccess={() => {
+            refetchLab();
             setTargetStatus(null);
           }}
-          status={targetStatus}
         />
       )}
       
@@ -791,7 +791,8 @@ export default function LabDetailPage() {
         open={isAddCircleOpen}
         onOpenChange={setIsAddCircleOpen}
         labId={labId || 0}
-        onAddSuccess={handleCircleUpdate}
+        onSuccess={handleCircleUpdate}
+        existingCircleIds={circles?.map(circle => circle.id) || []}
       />
       
       {/* Circle Role Dialog */}
@@ -803,7 +804,7 @@ export default function LabDetailPage() {
           circleId={selectedCircle.id}
           circleName={selectedCircle.name}
           currentRole={selectedCircle.role}
-          onUpdateSuccess={handleCircleUpdate}
+          onSuccess={handleCircleUpdate}
         />
       )}
     </TourProvider>
